@@ -1,0 +1,49 @@
+﻿version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=sqlite:///./mergemind.db
+      - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - ollama
+    networks:
+      - mergemind-network
+
+  frontend:
+    image: node:18-alpine
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - mergemind-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - mergemind-network
+
+networks:
+  mergemind-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
