@@ -1,174 +1,27 @@
-# MergeMind
+ï»¿# MergeMind - AI-Powered Open Source Intelligence Platform
 
-**The AI-powered Open Source Intelligence Platform**
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
-[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-
-MergeMind helps developers find the best GitHub issues to contribute to, with AI-driven insights on repository health, opportunity scores, and merge probability.
-
-## Features
-
-- Smart Discovery - AI finds issues matching your skills
-- Opportunity Scoring - 0-100 score based on merge probability and learning value
-- AI Assistant - Real-time contribution advice powered by Ollama
-- Portfolio Builder - Track contributions, build impressive portfolio
-- Daily Planner - Time-based issue recommendations
-- Repository Analysis - Health scores across 4 dimensions
+Find the best GitHub issues to contribute to with AI-driven insights.
 
 ## Quick Start
+1. Clone: git clone https://github.com/BistaDinesh03/mergemind.git
+2. Backend: cd backend && pip install -r requirements.txt && uvicorn app.main:app --reload --port 8000
+3. Frontend: cd frontend && npm install && npm run dev
+4. Open http://localhost:3000
 
-### Prerequisites
-- Docker and Docker Compose
-- Git
-- GitHub Account (for OAuth)
+## Features
+- AI-powered issue discovery
+- Repository health scoring (0-100)
+- Opportunity scoring
+- Merge probability prediction
+- AI assistant chat
+- Portfolio generator
+- Daily contribution planner
 
-### Setup
-`ash
-git clone https://github.com/BistaDinesh03/mergemind.git
-cd mergemind
-cp backend/.env.example backend/.env
-docker-compose up
-Access
-Frontend: http://localhost:3000
+## Tech Stack
+Frontend: Next.js 14, TypeScript, Tailwind CSS
+Backend: FastAPI, Python, SQLAlchemy
+AI: Ollama + Llama 3
+Auth: NextAuth.js + GitHub OAuth
 
-Backend API: http://localhost:8000
-
-API Docs: http://localhost:8000/docs
-
-Ollama AI: http://localhost:11434
-
-Tech Stack
-LayerTechnology
-FrontendNext.js 14, React 18, TypeScript, Tailwind CSS
-BackendFastAPI, Python 3.11, SQLAlchemy
-DatabaseSQLite (dev) / PostgreSQL (prod)
-AIOllama with Llama 3 and Qwen 2.5
-AuthNextAuth.js + GitHub OAuth
-DevOpsDocker, Docker Compose
-API Endpoints
-Authentication
-GET /auth/github/login
-
-POST /auth/github/callback
-
-GET /auth/me
-
-GitHub Integration
-GET /api/github/repositories
-
-GET /api/github/repository/{name}
-
-GET /api/github/issues/{repo}
-
-GET /api/github/analyze/{repo}
-
-Dashboard
-GET /api/dashboard/
-
-GET /api/dashboard/planner/daily
-
-GET /api/dashboard/leaderboard
-
-AI Assistant
-POST /api/assistant/chat
-
-POST /api/assistant/chat/stream
-
-GET /api/assistant/analyze-issue
-
-GET /api/assistant/pr-advice
-
-Portfolio
-GET /api/portfolio/{username}
-
-GET /api/portfolio/{username}/stats
-
-Project Structure
-text
-mergemind/
-+-- backend/
-¦   +-- app/
-¦   ¦   +-- models/          # SQLAlchemy models
-¦   ¦   +-- routers/         # API routes
-¦   ¦   +-- schemas/         # Pydantic schemas
-¦   ¦   +-- services/        # Business logic
-¦   ¦   ¦   +-- scoring/     # Scoring engines
-¦   ¦   +-- main.py          # FastAPI app
-¦   ¦   +-- config.py        # Settings
-¦   ¦   +-- database.py      # DB connection
-¦   +-- tests/               # Backend tests
-¦   +-- alembic/             # DB migrations
-¦   +-- requirements.txt
-+-- frontend/
-¦   +-- app/                 # Next.js pages
-¦   ¦   +-- dashboard/
-¦   ¦   +-- discover/
-¦   ¦   +-- assistant/
-¦   ¦   +-- portfolio/
-¦   ¦   +-- contributions/
-¦   ¦   +-- settings/
-¦   ¦   +-- login/
-¦   +-- components/          # Reusable UI
-¦   ¦   +-- layout/          # Navbar, Sidebar
-¦   ¦   +-- ui/              # Buttons, Cards
-¦   ¦   +-- providers/       # Auth provider
-¦   +-- lib/                 # Utilities
-+-- docker-compose.yml
-+-- ARCHITECTURE.md
-+-- CONTRIBUTING.md
-+-- README.md
-Development Roadmap
-Phase 1: Foundation
-Project scaffolding
-
-Docker environment
-
-Database models
-
-GitHub OAuth
-
-API integration
-
-Frontend shell
-
-Phase 2: Core Intelligence
-Health scoring engine
-
-Opportunity scoring engine
-
-Merge probability predictor
-
-Daily planner
-
-Dashboard API
-
-Phase 3: AI Integration
-Ollama setup
-
-Prompt engineering
-
-AI assistant chat
-
-Portfolio generator
-
-Phase 4: Polish
-Error handling
-
-Testing
-
-Documentation
-
-CI/CD pipeline
-
-Production deployment
-
-Contributing
-See CONTRIBUTING.md for contribution guidelines.
-
-License
-MIT License - see LICENSE file for details.
-
-Built with by the MergeMind Team
+## License
+MIT
