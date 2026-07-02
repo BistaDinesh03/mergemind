@@ -1,48 +1,32 @@
-<!-- PROJECT HEADER -->
-<div align="center">
-
-<img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/frontend/public/logo.png" alt="MergeMind Logo" width="120" height="120" />
-
 # 🧠 MergeMind
 
-### The AI-Powered Open Source Intelligence Platform
-
-*Find the right issue. Make the right contribution. Build your career.*
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Next.js 14](https://img.shields.io/badge/Next.js-14-black.svg)](https://nextjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+### AI-Powered Open Source Intelligence Platform
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/frontend/public/demo.gif" alt="MergeMind Demo" width="700" />
+  <img src="https://img.shields.io/badge/Python-3.11+-blue?logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/Next.js-14-black?logo=next.js" alt="Next.js">
+  <img src="https://img.shields.io/badge/FastAPI-latest-green?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
 </p>
 
-</div>
+<p align="center">
+  <b>Stop searching. Start contributing. Let AI find your perfect GitHub issue.</b>
+</p>
 
 ---
 
 ## 🤔 The Problem
 
-Every day, millions of developers open GitHub and ask themselves the same questions:
+Thousands of developers want to contribute to open source but struggle with:
 
-| 😫 Pain Point | 💭 Question |
-|---------------|------------|
-| **Wasted Time** | "Which issue is actually worth solving?" |
-| **Ghosting** | "Will my PR even get reviewed?" |
-| **Uncertainty** | "Is the maintainer active anymore?" |
-| **Competition** | "Is someone already working on this?" |
-| **Career Growth** | "Will this contribution help my resume?" |
-| **Trust Issues** | "Is this repository healthy or dead?" |
-
-> **GitHub gives you data. MergeMind gives you intelligence.**
-
----
+- ❌ **Analysis Paralysis** — Millions of issues. Which one to pick?
+- ❌ **Wasted Time** — Hours spent on issues that never get merged
+- ❌ **No Guidance** — Is this repo maintained? Will anyone respond?
+- ❌ **Missed Opportunities** — Can't find issues matching your skills
 
 ## 💡 Our Solution
 
-Imagine opening MergeMind and instantly seeing:
+Open MergeMind and instantly see your best match:
 ┌────────────────────────────────────────────┐
 │ Today's Best Opportunity │
 │ │
@@ -58,44 +42,21 @@ Imagine opening MergeMind and instantly seeing:
 
 text
 
-**No more guessing. Just clarity.**
+**No more guessing. Open, pick, contribute, grow.**
 
 ---
 
 ## ✨ Features
 
-<table>
-  <tr>
-    <td width="50%">
-      <h3>📊 Repository Health Score</h3>
-      <p>Every repo gets a 0-100 score analyzing maintainer activity, documentation, tests, and response time.</p>
-    </td>
-    <td width="50%">
-      <h3>🎯 Opportunity Score</h3>
-      <p>Every issue ranked by difficulty, maintainer friendliness, competition level, and learning value.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <h3>🔮 Merge Probability</h3>
-      <p>AI predicts your PR's chance of being merged before you write a single line of code.</p>
-    </td>
-    <td width="50%">
-      <h3>📅 Daily Planner</h3>
-      <p>Tells you exactly which issues to work on today based on your available time.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%">
-      <h3>🤖 AI Assistant</h3>
-      <p>Guides you: "Read this file first", "Add tests here", "Keep PR under 200 lines".</p>
-    </td>
-    <td width="50%">
-      <h3>💼 Portfolio Generator</h3>
-      <p>Every merged PR becomes part of your professional portfolio automatically.</p>
-    </td>
-  </tr>
-</table>
+| Feature | Description |
+|---------|-------------|
+| 🔍 **Smart Discovery** | AI finds issues matching your skills and goals |
+| 📊 **Health Scoring** | 4-factor repository analysis (0-100) |
+| 🎯 **Opportunity Scoring** | 6-factor evaluation of contribution potential |
+| 🔮 **Merge Predictor** | Predicts if your PR will get accepted |
+| 🤖 **AI Assistant** | Real-time advice powered by Ollama + Llama 3 |
+| 📈 **Portfolio Builder** | Auto-generate portfolio from merged PRs |
+| 📅 **Daily Planner** | Personalized plan based on your time |
 
 ---
 
@@ -128,168 +89,177 @@ text
 
 ---
 
-## 🛠️ Tech Stack
-
-<div align="center">
-
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| **Frontend** | ![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js) ![React](https://img.shields.io/badge/React-18-blue?logo=react) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC?logo=tailwind-css) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript) | Modern, fast, type-safe |
-| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi) ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python) ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-ORM-red) | High performance, easy APIs |
-| **AI/ML** | ![Ollama](https://img.shields.io/badge/Ollama-Llama_3-white) ![Qwen](https://img.shields.io/badge/Qwen-2.5-purple) | Local LLM, no API costs |
-| **DevOps** | ![Docker](https://img.shields.io/badge/Docker-🐳-2496ED?logo=docker) ![Git](https://img.shields.io/badge/Git-F05032?logo=git) | Consistent environments |
-| **Auth** | ![GitHub](https://img.shields.io/badge/GitHub-OAuth-181717?logo=github) | Dev-friendly login |
-
-</div>
-
----
-
 ## 🚀 Quick Start
 
-### Prerequisites
+### What You Need
+- **Python 3.11+** → [Download](https://www.python.org/downloads/)
+- **Node.js 20+** → [Download](https://nodejs.org/)
+- **GitHub Account** → For OAuth login
 
-Before you begin, ensure you have installed:
-
-- **[Python 3.11+](https://www.python.org/downloads/)**
-- **[Node.js 18+](https://nodejs.org/)**
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**
-- **[Git](https://git-scm.com/downloads)**
-- **[Ollama](https://ollama.com/download)**
-
-### One-Command Setup
+### Step 1: Clone
 
 ```bash
-# 1️⃣ Clone the repository
 git clone https://github.com/BistaDinesh03/mergemind.git
 cd mergemind
+Step 2: Setup GitHub OAuth
+Go to https://github.com/settings/developers
 
-# 2️⃣ Pull AI models (one-time setup, ~8GB)
-ollama pull llama3:8b
-ollama pull qwen2.5:7b
+Click New OAuth App
 
-# 3️⃣ Start everything with Docker
-docker-compose up --build
-Manual Setup (Without Docker)
-bash
-# Terminal 1: Backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env      # Fill in your GitHub tokens
-uvicorn app.main:app --reload --port 8000
+Fill in:
 
-# Terminal 2: Frontend
-cd frontend
-npm install
-cp .env.local.example .env.local
-npm run dev
+Name: MergeMind
 
-# Terminal 3: Ollama (must be running)
-ollama serve
-Access the App
-Service	URL
-🌐 Frontend	http://localhost:3000
-🔧 Backend API	http://localhost:8000
-📚 API Docs	http://localhost:8000/docs
-🤖 Ollama API	http://localhost:11434
-🔑 Environment Variables
-Backend (backend/.env)
-bash
-# GitHub API
+Homepage: http://localhost:3000
+
+Callback: http://localhost:3000/api/auth/callback/github
+
+Copy Client ID and generate Client Secret
+
+Step 3: Configure Environment
+Create backend/.env:
+
+env
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
-GITHUB_REDIRECT_URI=http://localhost:3000/api/auth/callback/github
-
-# Database
 DATABASE_URL=sqlite:///./mergemind.db
+SECRET_KEY=any-random-string
+Create frontend/.env.local:
 
-# Ollama
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3:8b
-
-# Auth
-SECRET_KEY=your_secret_key_here
-Frontend (frontend/.env.local)
-bash
-NEXT_PUBLIC_API_URL=http://localhost:8000
+env
+GITHUB_CLIENT_ID=your_client_id
+GITHUB_CLIENT_SECRET=your_client_secret
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret
-GITHUB_ID=your_github_client_id
-GITHUB_SECRET=your_github_client_secret
-📖 API Reference
-Key Endpoints
-Method	Endpoint	Description
-GET	/api/health	Health check
-GET	/api/dashboard	User statistics
-GET	/api/planner/daily?hours=1	Daily issue recommendations
-GET	/api/repositories/{id}/health	Repository health score
-GET	/api/issues/{id}/opportunity	Issue opportunity score
-GET	/api/issues/{id}/merge-probability	Merge prediction
-POST	/api/assistant/chat	AI assistant query
-GET	/api/portfolio/{username}	Portfolio generation
-Full Swagger docs available at /docs when backend is running.
+NEXTAUTH_SECRET=any-random-string
+Step 4: Start Backend
+bash
+cd backend
+python -m venv venv
+venv\Scripts\activate        # Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+Step 5: Start Frontend
+Open a new terminal:
 
+bash
+cd frontend
+npm install
+npm run dev
+Step 6: Open
+🌐 App → http://localhost:3000
+
+📚 API Docs → http://localhost:8000/docs
+
+❤️ Health → http://localhost:8000/health
+
+🧪 How Scoring Works
+Repository Health Score (0-100)
+Factor	Weight	What It Checks
+Maintainer Activity	40%	Recent commits, PR merges, responses
+Documentation	25%	README, CONTRIBUTING.md, templates
+Test Coverage	20%	CI/CD setup, test files found
+Response Time	15%	Average hours to first response
+Opportunity Score (0-100)
+Factor	Weight	What It Checks
+Difficulty Match	25%	Fits your skill level?
+Maintainer Help	20%	Will you get support?
+Competition	20%	Others working on it?
+Beginner Friendly	15%	Good first issue labels?
+Time Required	10%	Hours to complete?
+Career Value	10%	Popular repo? Good tech?
+📁 Project Structure
+text
+mergemind/
+├── backend/
+│   ├── app/
+│   │   ├── models/          # User, Repository, Issue, Contribution
+│   │   ├── routers/         # auth, github, dashboard, assistant, portfolio
+│   │   ├── services/
+│   │   │   └── scoring/     # Health, Opportunity, Merge Predictors
+│   │   ├── main.py          # FastAPI app
+│   │   └── database.py      # SQLAlchemy setup
+│   └── requirements.txt
+├── frontend/
+│   ├── app/
+│   │   ├── dashboard/       # User dashboard
+│   │   ├── discover/        # Find issues
+│   │   ├── assistant/       # AI chat
+│   │   └── login/           # GitHub OAuth
+│   └── components/          # Reusable UI
+└── README.md
+🔌 API Endpoints
+Method	Endpoint	What It Does
+GET	/health	Health check
+GET	/auth/github/login	GitHub login
+GET	/api/github/repositories	Your repos
+GET	/api/github/search/issues	Search issues
+GET	/api/github/analyze/{repo}	Analyze repo
+GET	/api/dashboard/	Your stats
+GET	/api/dashboard/planner/daily	Daily plan
+POST	/api/assistant/chat	AI chat
+GET	/api/portfolio/{username}	Portfolio
+🛠️ Tech Stack
+Layer	Technology
+Frontend	Next.js 14, React 18, TypeScript, Tailwind CSS
+Backend	FastAPI, Python 3.11, SQLAlchemy
+Database	SQLite (dev) / PostgreSQL (prod)
+AI	Ollama + Llama 3
+Auth	NextAuth.js + GitHub OAuth
 🗺️ Roadmap
-Month 1: Foundation (Git, Docker, Backend, Frontend, GitHub API, Auth)
+✅ Done
+GitHub OAuth login
 
-Month 2: Core Intelligence (Health Score, Opportunity Score, Daily Planner)
+Repository health scoring
 
-Month 3: AI Layer (Merge Prediction, AI Assistant, Recommendations)
+Opportunity scoring engine
 
-Month 4: Polish (Better UI, Testing, Documentation, Launch)
+Merge probability predictor
 
-📸 Screenshots
-<div align="center">
-Dashboard
-<img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/frontend/public/screenshots/dashboard.png" width="800" alt="Dashboard" />
-Repository Health
-<img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/frontend/public/screenshots/health.png" width="800" alt="Health Score" />
-AI Assistant
-<img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/frontend/public/screenshots/assistant.png" width="800" alt="AI Assistant" /></div>
+AI assistant chat
+
+Portfolio generator
+
+Daily planner
+
+Dark mode UI
+
+🚧 Next
+Docker one-command setup
+
+PostgreSQL support
+
+Email notifications
+
+🔮 Future
+VS Code extension
+
+Slack bot
+
+Team features
+
 🤝 Contributing
-We love contributions! Here's how to get started:
+We love contributors! See CONTRIBUTING.md
 
-Fork the repository
+Great first issues:
 
-Clone your fork: git clone https://github.com/YOUR_USERNAME/mergemind.git
+Add more scoring factors
 
-Create a branch: git checkout -b feature/amazing-feature
+Improve test coverage
 
-Commit changes: git commit -m 'Add amazing feature'
+Add component stories
 
-Push: git push origin feature/amazing-feature
+Translate docs
 
-Open a Pull Request
+⭐ Support the Project
+⭐ Star this repo
 
-See CONTRIBUTING.md for detailed guidelines.
+🐛 Report bugs
 
-👨‍💻 The Developer
-<div align="center">
-Dinesh Bista
-"Building tools that make open source better for everyone."
+💡 Suggest features
 
-https://img.shields.io/badge/GitHub-BistaDinesh03-181717?logo=github
-https://img.shields.io/badge/LinkedIn-Connect-0A66C2?logo=linkedin
-https://img.shields.io/badge/Twitter-Follow-1DA1F2?logo=twitter
-
-</div>
-⭐ Support This Project
-If MergeMind helped you find your next great contribution:
-
-⭐ Star this repository
-
-🐦 Share on social media
-
-💬 Tell your developer friends
-
-🐛 Report bugs or suggest features
+🔀 Submit PRs
 
 📄 License
-This project is licensed under the MIT License — see the LICENSE file for details.
+MIT © BistaDinesh03
 
-<div align="center">
-text
-Made with ❤️ by Dinesh Bista
-Building the future of open source contributions
-</div> ```
+<p align="center"> <b>Built with ❤️ for open source</b><br> <i>Stop searching. Start contributing.</i> </p> ```
