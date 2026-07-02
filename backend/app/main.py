@@ -1,7 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from .config import settings
 from .database import engine, Base
+from .error_handler import (
+    http_exception_handler,
+    validation_exception_handler,
+    general_exception_handler,
+    log_request_middleware,
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -13,6 +21,14 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Register exception handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
+# Request logging middleware
+app.middleware("http")(log_request_middleware)
 
 # CORS middleware
 app.add_middleware(
