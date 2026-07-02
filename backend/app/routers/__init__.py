@@ -1,1 +1,1 @@
-from . import auth, github, dashboard, assistant, portfolio
+from . import auth, github, dashboard, assistant

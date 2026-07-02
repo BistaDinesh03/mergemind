@@ -1,33 +1,17 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { SessionProvider } from '@/components/providers/SessionProvider'
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'MergeMind',
   description: 'The AI-powered Open Source Intelligence Platform',
-  keywords: ['open source', 'github', 'contributions', 'AI', 'developer tools'],
-  authors: [{ name: 'MergeMind' }],
-  openGraph: {
-    title: 'MergeMind',
-    description: 'AI-powered Open Source Intelligence Platform',
-    type: 'website',
-  },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-dark-950 text-white antialiased">
-        <SessionProvider>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </SessionProvider>
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   )
