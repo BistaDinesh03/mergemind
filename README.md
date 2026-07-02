@@ -1,265 +1,304 @@
+<div align="center">
+
 # 🧠 MergeMind
 
-### AI-Powered Open Source Intelligence Platform
+### Find your next open source contribution in 30 seconds, not 3 hours.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-blue?logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/Next.js-14-black?logo=next.js" alt="Next.js">
-  <img src="https://img.shields.io/badge/FastAPI-latest-green?logo=fastapi" alt="FastAPI">
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
-</p>
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.139-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
-<p align="center">
-  <b>Stop searching. Start contributing. Let AI find your perfect GitHub issue.</b>
-</p>
+<br>
+
+<img src="https://raw.githubusercontent.com/BistaDinesh03/mergemind/main/screenshot.png" alt="MergeMind Dashboard" width="800" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+
+<br>
+<br>
+
+<h3>
+  AI that scans GitHub repositories.<br>
+  Scores every issue based on YOUR skills.<br>
+  Tells you exactly what to work on today.
+</h3>
+
+</div>
 
 ---
 
-## 🤔 The Problem
+## The Reality Check
 
-Thousands of developers want to contribute to open source but struggle with:
+You want to contribute to open source. You open GitHub. You see **millions of issues**.
 
-- ❌ **Analysis Paralysis** — Millions of issues. Which one to pick?
-- ❌ **Wasted Time** — Hours spent on issues that never get merged
-- ❌ **No Guidance** — Is this repo maintained? Will anyone respond?
-- ❌ **Missed Opportunities** — Can't find issues matching your skills
+- Which repo is actually maintained?
+- Will anyone even review my PR?
+- Is this issue too hard? Too easy?
+- Am I wasting my time?
 
-## 💡 Our Solution
+**MergeMind answers all of this before you write a single line of code.**
 
-Open MergeMind and instantly see your best match:
-┌────────────────────────────────────────────┐
-│ Today's Best Opportunity │
+---
+
+## What You Get
+
+<div align="center">
+
+| | |
+|---|---|
+| 🔍 **Smart Matching** | Issues filtered by YOUR languages, skill level, and goals |
+| 📊 **Health Score** | Know if a repo is alive or abandoned (0-100) |
+| 🎯 **Opportunity Score** | Is this issue worth your time? (0-100) |
+| 🔮 **Merge Chance** | Will your PR actually get accepted? |
+| 🤖 **AI Advisor** | Chat about any repo and get real advice |
+| 📅 **Daily Plan** | "I have 45 minutes" → Here's your plan |
+| 🏆 **Portfolio** | All your merged PRs in one shareable page |
+
+</div>
+
+---
+
+## See It In Action
+You open MergeMind.
+You log in with GitHub (one click).
+
+Your dashboard shows:
+
+┌─────────────────────────────────────────────┐
 │ │
-│ Repository: FastAPI │
-│ Health: ████████░░ 97% │
+│ ⭐ TODAY'S TOP PICK │
+│ │
+│ fastapi/fastapi │
+│ "Add type hints to dependencies/utils.py" │
+│ │
+│ Health: ●●●●●●●●○○ 85/100 │
 │ Difficulty: 🟢 Easy │
-│ Merge Rate: █████████░ 91% │
-│ Time: ⏱️ 1.5 hours │
-│ Skills: Python • APIs │
-│ Verdict: ⭐ Highly Recommended │
+│ Merge Rate: ●●●●●●●●●○ 92% │
+│ Your Skills: Python ● Type Hints ● APIs │
+│ Est. Time: 1.5 hours │
 │ │
-└────────────────────────────────────────────┘
+│ AI says: "Active maintainers. Good docs. │
+│ Low competition. Start with utils.py." │
+│ │
+│ [ Start Contributing ] │
+│ │
+└─────────────────────────────────────────────┘
 
-text
-
-**No more guessing. Open, pick, contribute, grow.**
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| 🔍 **Smart Discovery** | AI finds issues matching your skills and goals |
-| 📊 **Health Scoring** | 4-factor repository analysis (0-100) |
-| 🎯 **Opportunity Scoring** | 6-factor evaluation of contribution potential |
-| 🔮 **Merge Predictor** | Predicts if your PR will get accepted |
-| 🤖 **AI Assistant** | Real-time advice powered by Ollama + Llama 3 |
-| 📈 **Portfolio Builder** | Auto-generate portfolio from merged PRs |
-| 📅 **Daily Planner** | Personalized plan based on your time |
-
----
-
-## 🏗️ Architecture
-┌─────────────────────────────────────────────────────┐
-│ User Browser │
-│ (Next.js Frontend) │
-└─────────────────────┬───────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────┐
-│ FastAPI Backend │
-│ ┌──────────┬──────────┬──────────┬──────────────┐ │
-│ │ Auth │ GitHub │ Scoring │ AI Engine │ │
-│ │ Service │ API │ Engine │ (Ollama) │ │
-│ └──────────┴──────────┴──────────┴──────────────┘ │
-│ │ │
-│ SQLite / PostgreSQL │
-└─────────────────────────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────────────────────────┐
-│ External Services │
-│ ┌──────────────┬──────────────┬─────────────────┐ │
-│ │ GitHub API │ Ollama │ NextAuth.js │ │
-│ └──────────────┴──────────────┴─────────────────┘ │
-└─────────────────────────────────────────────────────┘
+That's it. Pick it. Code it. Ship it.
 
 text
 
 ---
 
-## 🚀 Quick Start
+## Tech Behind It
 
-### What You Need
-- **Python 3.11+** → [Download](https://www.python.org/downloads/)
-- **Node.js 20+** → [Download](https://nodejs.org/)
-- **GitHub Account** → For OAuth login
+<div align="center">
 
-### Step 1: Clone
+| Backend | Frontend | AI | Database |
+|:---:|:---:|:---:|:---:|
+| FastAPI | Next.js 14 | Ollama | SQLite |
+| Python 3.11 | React 18 | Llama 3 | PostgreSQL* |
+| SQLAlchemy | TypeScript | Qwen 2.5 | |
+| Alembic | Tailwind CSS | Local & Free | |
 
-```bash
-git clone https://github.com/BistaDinesh03/mergemind.git
-cd mergemind
-Step 2: Setup GitHub OAuth
-Go to https://github.com/settings/developers
+<sub>*SQLite for dev, PostgreSQL ready for production</sub>
 
-Click New OAuth App
+</div>
 
-Fill in:
+---
 
-Name: MergeMind
+## Run It Locally
 
-Homepage: http://localhost:3000
+### You Need
+- **Python 3.11+** installed
+- **Node.js 20+** installed  
+- A **GitHub account**
 
-Callback: http://localhost:3000/api/auth/callback/github
+### 3 Steps
 
-Copy Client ID and generate Client Secret
+**Step 1: Get your keys**
+1. Go to https://github.com/settings/developers
+2. Create a new OAuth App
+3. Set callback URL to `http://localhost:3000/api/auth/callback/github`
+4. Copy the Client ID and Secret
 
-Step 3: Configure Environment
-Create backend/.env:
+**Step 2: Add your keys**
 
-env
+Create `backend/.env`:
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 DATABASE_URL=sqlite:///./mergemind.db
-SECRET_KEY=any-random-string
-Create frontend/.env.local:
+SECRET_KEY=anything123
 
-env
+text
+
+Create `frontend/.env.local`:
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=any-random-string
-Step 4: Start Backend
-bash
+NEXTAUTH_SECRET=anything123
+
+text
+
+**Step 3: Start the app**
+
+Terminal 1 (Backend):
 cd backend
 python -m venv venv
-venv\Scripts\activate        # Windows
+venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
-Step 5: Start Frontend
-Open a new terminal:
 
-bash
+text
+
+Terminal 2 (Frontend):
 cd frontend
 npm install
 npm run dev
-Step 6: Open
-🌐 App → http://localhost:3000
 
-📚 API Docs → http://localhost:8000/docs
-
-❤️ Health → http://localhost:8000/health
-
-🧪 How Scoring Works
-Repository Health Score (0-100)
-Factor	Weight	What It Checks
-Maintainer Activity	40%	Recent commits, PR merges, responses
-Documentation	25%	README, CONTRIBUTING.md, templates
-Test Coverage	20%	CI/CD setup, test files found
-Response Time	15%	Average hours to first response
-Opportunity Score (0-100)
-Factor	Weight	What It Checks
-Difficulty Match	25%	Fits your skill level?
-Maintainer Help	20%	Will you get support?
-Competition	20%	Others working on it?
-Beginner Friendly	15%	Good first issue labels?
-Time Required	10%	Hours to complete?
-Career Value	10%	Popular repo? Good tech?
-📁 Project Structure
 text
+
+Open **http://localhost:3000** — that's it!
+
+---
+
+## How Scoring Works
+
+### Repository Health
+
+We look at 4 things to tell you if a repo is worth contributing to:
+
+| What We Check | Why It Matters | Weight |
+|---|---|---|
+| Recent commits & PR merges | Is anyone actually working here? | 40% |
+| README, guides, templates | Can you figure out how to contribute? | 25% |
+| Tests & CI/CD | Will your code be checked properly? | 20% |
+| Response time to issues | Will maintainers answer your questions? | 15% |
+
+### Issue Opportunity
+
+We score every issue on 6 factors:
+
+| What We Check | Why It Matters | Weight |
+|---|---|---|
+| Matches your skill level | Not too easy, not impossible | 25% |
+| No one else assigned | Less competition = higher chance | 20% |
+| Active maintainers | You'll get reviews and help | 20% |
+| Beginner-friendly labels | "good first issue" = easier start | 15% |
+| Time to complete | Fits your available time? | 10% |
+| Repo popularity | Good for your resume/portfolio | 10% |
+
+---
+
+## API Endpoints
+
+Everything is documented. When running, open http://localhost:8000/docs
+
+| Quick Reference | |
+|---|---|
+| `GET /health` | Server status |
+| `GET /api/dashboard` | Your stats & top picks |
+| `GET /api/dashboard/planner/daily` | Today's plan |
+| `GET /api/github/search/issues` | Search across GitHub |
+| `GET /api/github/analyze/{repo}` | Full repo analysis |
+| `POST /api/assistant/chat` | Chat with AI |
+| `GET /api/portfolio/{username}` | Your portfolio |
+
+---
+
+## Project Structure
 mergemind/
-├── backend/
-│   ├── app/
-│   │   ├── models/          # User, Repository, Issue, Contribution
-│   │   ├── routers/         # auth, github, dashboard, assistant, portfolio
-│   │   ├── services/
-│   │   │   └── scoring/     # Health, Opportunity, Merge Predictors
-│   │   ├── main.py          # FastAPI app
-│   │   └── database.py      # SQLAlchemy setup
-│   └── requirements.txt
-├── frontend/
-│   ├── app/
-│   │   ├── dashboard/       # User dashboard
-│   │   ├── discover/        # Find issues
-│   │   ├── assistant/       # AI chat
-│   │   └── login/           # GitHub OAuth
-│   └── components/          # Reusable UI
+│
+├── backend/ # Python API server
+│ ├── app/
+│ │ ├── models/ # Database tables
+│ │ ├── routers/ # API route handlers
+│ │ ├── services/
+│ │ │ ├── scoring/ # Health & opportunity engines
+│ │ │ ├── github_service.py
+│ │ │ ├── ollama_service.py
+│ │ │ └── ai_recommendation_service.py
+│ │ ├── main.py # App entry point
+│ │ └── config.py # Settings management
+│ ├── tests/
+│ └── requirements.txt
+│
+├── frontend/ # Next.js web app
+│ ├── app/
+│ │ ├── dashboard/ # Your stats & plan
+│ │ ├── discover/ # Browse scored issues
+│ │ ├── assistant/ # AI chat interface
+│ │ ├── portfolio/ # Shareable portfolio
+│ │ ├── contributions/ # Track your PRs
+│ │ ├── settings/ # Preferences
+│ │ └── login/ # GitHub sign-in
+│ └── components/
+│ ├── layout/ # Navbar, Sidebar
+│ └── ui/ # Cards, badges, skeletons
+│
+├── docker-compose.yml
+├── ARCHITECTURE.md
+├── CONTRIBUTING.md
 └── README.md
-🔌 API Endpoints
-Method	Endpoint	What It Does
-GET	/health	Health check
-GET	/auth/github/login	GitHub login
-GET	/api/github/repositories	Your repos
-GET	/api/github/search/issues	Search issues
-GET	/api/github/analyze/{repo}	Analyze repo
-GET	/api/dashboard/	Your stats
-GET	/api/dashboard/planner/daily	Daily plan
-POST	/api/assistant/chat	AI chat
-GET	/api/portfolio/{username}	Portfolio
-🛠️ Tech Stack
-Layer	Technology
-Frontend	Next.js 14, React 18, TypeScript, Tailwind CSS
-Backend	FastAPI, Python 3.11, SQLAlchemy
-Database	SQLite (dev) / PostgreSQL (prod)
-AI	Ollama + Llama 3
-Auth	NextAuth.js + GitHub OAuth
-🗺️ Roadmap
-✅ Done
-GitHub OAuth login
 
-Repository health scoring
+text
 
-Opportunity scoring engine
+---
 
-Merge probability predictor
+## Roadmap
 
-AI assistant chat
+### Working Now
+- [x] Sign in with GitHub
+- [x] Repository health analysis
+- [x] Issue opportunity scoring
+- [x] AI chat assistant
+- [x] Portfolio generator
+- [x] Daily contribution planner
+- [x] Dark mode
 
-Portfolio generator
+### Building Next
+- [ ] Docker one-command setup
+- [ ] PostgreSQL support
+- [ ] Contribution streak tracker
+- [ ] Email digests
 
-Daily planner
+### Future Ideas
+- [ ] VS Code extension
+- [ ] Slack bot integration
+- [ ] Team dashboards
+- [ ] Hackathon matchmaker
 
-Dark mode UI
+---
 
-🚧 Next
-Docker one-command setup
+## Want to Contribute?
 
-PostgreSQL support
+This project is **perfect for first-time open source contributors**.
 
-Email notifications
+**Easy ways to start:**
+- Add a new scoring factor in `backend/app/services/scoring/`
+- Improve a UI component in `frontend/components/`
+- Write better tests in `backend/tests/`
+- Fix a typo or improve docs
 
-🔮 Future
-VS Code extension
+Check [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, or just open an issue and say "I want to help!"
 
-Slack bot
+---
 
-Team features
+## One More Thing
 
-🤝 Contributing
-We love contributors! See CONTRIBUTING.md
+If this project helps you find a good issue to work on, **star the repo** ⭐
 
-Great first issues:
+It helps other developers discover MergeMind too.
 
-Add more scoring factors
+---
 
-Improve test coverage
+<div align="center">
 
-Add component stories
+<br>
 
-Translate docs
+**Built by developers, for developers.**
 
-⭐ Support the Project
-⭐ Star this repo
+[BistaDinesh03](https://github.com/BistaDinesh03) • [Report Bug](https://github.com/BistaDinesh03/mergemind/issues) • [Request Feature](https://github.com/BistaDinesh03/mergemind/issues)
 
-🐛 Report bugs
+<br>
 
-💡 Suggest features
-
-🔀 Submit PRs
-
-📄 License
-MIT © BistaDinesh03
-
-<p align="center"> <b>Built with ❤️ for open source</b><br> <i>Stop searching. Start contributing.</i> </p> ```
+</div>
