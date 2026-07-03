@@ -1,98 +1,59 @@
 "use client"
-
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Search, Star, GitFork, ExternalLink, Loader2, TrendingUp } from "lucide-react"
+import { useState } from "react"
+import { Navbar } from "@/components/Navbar"
+import { SearchBar } from "@/components/SearchBar"
+import { LanguageFilter } from "@/components/LanguageFilter"
+import { RepoCard, RepoCardSkeleton } from "@/components/RepoCard"
+import { DiscoverSkeleton } from "@/components/Skeletons"
+import { ErrorDisplay } from "@/components/ErrorDisplay"
+import { EmptyState } from "@/components/EmptyState"
+import { useRepos } from "@/lib/useRepos"
 
 export default function DiscoverPage() {
-  const [repos, setRepos] = useState([])
-  const [issues, setIssues] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [language, setLanguage] = useState("python")
-  const [selectedRepo, setSelectedRepo] = useState("")
+  const [query, setQuery] = useState("")
+  const [language, setLanguage] = useState("")
+  const [sort, setSort] = useState("stars")
+  const { repos, total, loading, error, refetch } = useRepos({ query, language, sort })
 
-  useEffect(() => {
-    fetch(`http://localhost:8000/api/github/trending?language=${language}`)
-      .then(r => r.json())
-      .then(d => { setRepos(d.repos || []); setLoading(false) })
-  }, [language])
-
-  const loadIssues = async (repoFullName: string) => {
-    setSelectedRepo(repoFullName)
-    setIssues([])
-    const [owner, repo] = repoFullName.split("/")
-    const r = await fetch(`http://localhost:8000/api/github/issues/${owner}/${repo}`)
-    const d = await r.json()
-    setIssues(d.issues || [])
-  }
+  if (loading && repos.length === 0) return <DiscoverSkeleton />
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">MergeMind</Link>
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-300 hover:text-white text-sm">Dashboard</Link>
-          <Link href="/discover" className="text-blue-400 text-sm">Discover</Link>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Discover Issues</h1>
-          <p className="text-gray-400 mt-1">Real GitHub issues from trending repositories</p>
+    <div className="min-h-screen bg-[#0a0b0f] text-white">
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 sm:mb-2">Discover Repositories</h1>
+          <p className="text-gray-400 text-xs sm:text-sm">Find the perfect open source project</p>
+          {total > 0 && <p className="text-xs text-gray-500 mt-1 sm:mt-2">{total.toLocaleString()} repos found</p>}
         </div>
 
-        {/* Language Filter */}
-        <div className="flex gap-2 mb-6">
-          {["python", "javascript", "typescript", "rust", "go"].map(lang => (
-            <button key={lang} onClick={() => setLanguage(lang)}
-              className={`px-4 py-2 rounded-lg text-sm capitalize ${language === lang ? "bg-purple-600" : "bg-[#1a1a2e] border border-gray-700 hover:bg-gray-700"}`}>
-              {lang}
-            </button>
-          ))}
+        {/* Filters - stack on mobile */}
+        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <div className="flex-1"><SearchBar onSearch={setQuery} /></div>
+            <select value={sort} onChange={(e) => setSort(e.target.value)} 
+              className="px-3 py-2.5 sm:py-3 bg-[#111318] border border-gray-700/50 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 w-full sm:w-auto">
+              <option value="stars">Most Stars</option><option value="updated">Recently Updated</option><option value="forks">Most Forks</option>
+            </select>
+          </div>
+          <LanguageFilter selected={language} onSelect={setLanguage} />
         </div>
 
-        {loading ? (
-          <div className="text-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto" /><p className="text-gray-400 mt-4">Loading trending repos...</p></div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Repos List */}
-            <div className="space-y-3">
-              <h2 className="font-semibold text-lg mb-3">Trending {language} Repos</h2>
-              {repos.map((repo: any) => (
-                <div key={repo.name} onClick={() => loadIssues(repo.name)}
-                  className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedRepo === repo.name ? "border-purple-500 bg-purple-500/10" : "border-gray-700 bg-[#111118] hover:border-gray-600"}`}>
-                  <p className="font-medium">{repo.name}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {repo.stars?.toLocaleString()}</span>
-                    <span>{repo.language}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {error && <ErrorDisplay type="api" message={error} onRetry={refetch} />}
+        
+        {loading && repos.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {[...Array(4)].map((_, i) => <RepoCardSkeleton key={i} />)}
+          </div>
+        )}
 
-            {/* Issues List */}
-            <div className="space-y-3">
-              <h2 className="font-semibold text-lg mb-3">
-                {selectedRepo ? `Issues in ${selectedRepo}` : "Select a repo to see issues"}
-              </h2>
-              {issues.map((issue: any) => (
-                <a key={issue.number} href={issue.url} target="_blank" rel="noopener noreferrer"
-                  className="block p-4 rounded-xl border border-gray-700 bg-[#111118] hover:border-gray-500 transition-all">
-                  <p className="font-medium text-sm">{issue.title}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    {issue.labels?.map((l: string) => (
-                      <span key={l} className="px-2 py-0.5 text-xs bg-green-500/10 text-green-400 rounded-full">{l}</span>
-                    ))}
-                    <span className="text-xs text-gray-500 ml-auto">#{issue.number}</span>
-                    <ExternalLink className="w-3 h-3 text-gray-500" />
-                  </div>
-                </a>
-              ))}
-              {selectedRepo && issues.length === 0 && (
-                <p className="text-gray-500 text-center py-10">No "good first issue" found in this repo</p>
-              )}
-            </div>
+        {!loading && !error && repos.length === 0 && (
+          <EmptyState type={query ? "search" : "repos"} />
+        )}
+
+        {!loading && !error && repos.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {repos.map((repo: any) => <RepoCard key={repo.id} repo={repo} />)}
           </div>
         )}
       </div>
