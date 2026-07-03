@@ -1,57 +1,38 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
-from fastapi.responses import HTMLResponse
-from sqlalchemy.orm import Session
-from ..database import get_db
-from ..services.portfolio_service import PortfolioService
+from fastapi import APIRouter, Query
+import httpx
+from ..config import settings
 
 router = APIRouter()
 
 @router.get("/{username}")
-async def get_portfolio(
-    username: str,
-    format: str = Query(default="json", description="Response format: json or html"),
-    db: Session = Depends(get_db),
-):
-    """"
-    Generate a portfolio for a GitHub username.
+async def portfolio(username: str):
+    """Generate portfolio from GitHub contributions"""
+    headers = {"Authorization": f"Bearer {settings.github_token}", "User-Agent": "MergeMind"}
     
-    Args:
-        username: GitHub username
-        format: Response format (json or html)
-    """"
-    try:
-        portfolio = PortfolioService.generate_portfolio(db, username)
+    async with httpx.AsyncClient() as c:
+        # Get user info
+        user_r = await c.get(f"https://api.github.com/users/{username}", headers=headers)
+        user = user_r.json() if user_r.status_code == 200 else {}
         
-        if "error" in portfolio:
-            raise HTTPException(status_code=404, detail=portfolio["error"])
+        # Get repos
+        repos_r = await c.get(f"https://api.github.com/users/{username}/repos?sort=updated&per_page=10", headers=headers)
+        repos = repos_r.json() if repos_r.status_code == 200 else []
         
-        if format == "html":
-            html = PortfolioService.generate_html_portfolio(portfolio)
-            return HTMLResponse(content=html)
-        
-        return portfolio
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/{username}/stats")
-async def get_portfolio_stats(
-    username: str,
-    db: Session = Depends(get_db),
-):
-    """Get portfolio stats only."""
-    try:
-        portfolio = PortfolioService.generate_portfolio(db, username)
-        
-        if "error" in portfolio:
-            raise HTTPException(status_code=404, detail=portfolio["error"])
-        
-        return {
-            "username": username,
-            "stats": portfolio.get("stats", {}),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "username": username,
+        "name": user.get("name"),
+        "bio": user.get("bio"),
+        "avatar": user.get("avatar_url"),
+        "followers": user.get("followers", 0),
+        "public_repos": user.get("public_repos", 0),
+        "repositories": [
+            {
+                "name": r["full_name"],
+                "stars": r["stargazers_count"],
+                "language": r["language"],
+                "description": r.get("description", "")[:100] if r.get("description") else "",
+                "url": r["html_url"]
+            } for r in repos
+        ],
+        "generated_by": "MergeMind"
+    }
