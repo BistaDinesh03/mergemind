@@ -1,19 +1,8 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
+from fastapi import APIRouter
 router = APIRouter()
-
-class CallbackRequest(BaseModel):
-    code: str
-
 @router.get("/github/login")
-async def github_login():
-    return {"message": "Redirect to GitHub OAuth"}
-
+async def login(): return {"url": "https://github.com/login/oauth/authorize"}
 @router.post("/github/callback")
-async def github_callback(request: CallbackRequest):
-    return {"access_token": "demo_token", "user": {"id": "1", "github_username": "demo"}}
-
+async def callback(): return {"status": "ok"}
 @router.get("/me")
-async def get_current_user():
-    return {"id": "1", "github_username": "demo", "email": "demo@example.com"}
+async def me(): return {"user": "demo"}
