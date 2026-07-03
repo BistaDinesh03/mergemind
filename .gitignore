@@ -23,4 +23,6 @@ package-lock.json
 Thumbs.db
 
 # Frontend env
+frontend/.env.local.env
+backend/.env
 frontend/.env.local
