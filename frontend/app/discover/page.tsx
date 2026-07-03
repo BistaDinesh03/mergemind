@@ -1,80 +1,101 @@
 "use client"
 
-import { useState } from "react"
-import { Search, Filter, Star, CircleDot, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-
-const mockIssues = [
-  { id: 1, title: "Add dark mode support to settings", repo: "facebook/react", labels: ["good first issue"], score: 85, difficulty: "Easy", hours: 2, stars: 225000 },
-  { id: 2, title: "Improve error handling in API middleware", repo: "vercel/next.js", labels: ["help wanted"], score: 72, difficulty: "Medium", hours: 4, stars: 125000 },
-  { id: 3, title: "Write unit tests for utility functions", repo: "microsoft/vscode", labels: ["good first issue"], score: 90, difficulty: "Easy", hours: 3, stars: 160000 },
-]
+import { Search, Star, GitFork, ExternalLink, Loader2, TrendingUp } from "lucide-react"
 
 export default function DiscoverPage() {
-  const [searchQuery, setSearchQuery] = useState("")
+  const [repos, setRepos] = useState([])
+  const [issues, setIssues] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [language, setLanguage] = useState("python")
+  const [selectedRepo, setSelectedRepo] = useState("")
+
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/github/trending?language=${language}`)
+      .then(r => r.json())
+      .then(d => { setRepos(d.repos || []); setLoading(false) })
+  }, [language])
+
+  const loadIssues = async (repoFullName: string) => {
+    setSelectedRepo(repoFullName)
+    setIssues([])
+    const [owner, repo] = repoFullName.split("/")
+    const r = await fetch(`http://localhost:8000/api/github/issues/${owner}/${repo}`)
+    const d = await r.json()
+    setIssues(d.issues || [])
+  }
 
   return (
-    <div className="min-h-screen bg-dark-950">
-      <nav className="flex items-center justify-between p-6 border-b border-gray-800">
-        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 text-transparent bg-clip-text">
-          MergeMind
-        </Link>
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">MergeMind</Link>
         <div className="flex items-center gap-4">
-          <Link href="/discover" className="text-blue-400">Discover</Link>
-          <Link href="/dashboard" className="text-gray-300 hover:text-white">Dashboard</Link>
+          <Link href="/dashboard" className="text-gray-300 hover:text-white text-sm">Dashboard</Link>
+          <Link href="/discover" className="text-blue-400 text-sm">Discover</Link>
         </div>
       </nav>
 
-      <main className="p-8 max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Discover Issues</h1>
-          <p className="text-gray-400">Find the perfect issues to contribute to, scored by AI</p>
+          <h1 className="text-3xl font-bold">Discover Issues</h1>
+          <p className="text-gray-400 mt-1">Real GitHub issues from trending repositories</p>
         </div>
 
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Search issues, repositories, or topics..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-dark-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {mockIssues.map((issue) => (
-            <div key={issue.id} className="bg-dark-800 rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all cursor-pointer">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CircleDot className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm text-gray-400">{issue.repo}</span>
-                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                      <Star className="w-3 h-3" /> {(issue.stars / 1000).toFixed(0)}k
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2 hover:text-blue-400 transition-colors">{issue.title}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {issue.labels.map((label) => (
-                      <span key={label} className="px-2 py-0.5 text-xs bg-blue-600/20 text-blue-400 rounded-full border border-blue-600/30">{label}</span>
-                    ))}
-                    <span className="px-2 py-0.5 text-xs bg-emerald-600/20 text-emerald-400 rounded-full">{issue.difficulty}</span>
-                    <span className="px-2 py-0.5 text-xs bg-purple-600/20 text-purple-400 rounded-full">~{issue.hours}h</span>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-600/30 text-sm font-bold">
-                    {issue.score}
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Language Filter */}
+        <div className="flex gap-2 mb-6">
+          {["python", "javascript", "typescript", "rust", "go"].map(lang => (
+            <button key={lang} onClick={() => setLanguage(lang)}
+              className={`px-4 py-2 rounded-lg text-sm capitalize ${language === lang ? "bg-purple-600" : "bg-[#1a1a2e] border border-gray-700 hover:bg-gray-700"}`}>
+              {lang}
+            </button>
           ))}
         </div>
-      </main>
+
+        {loading ? (
+          <div className="text-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto" /><p className="text-gray-400 mt-4">Loading trending repos...</p></div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Repos List */}
+            <div className="space-y-3">
+              <h2 className="font-semibold text-lg mb-3">Trending {language} Repos</h2>
+              {repos.map((repo: any) => (
+                <div key={repo.name} onClick={() => loadIssues(repo.name)}
+                  className={`p-4 rounded-xl cursor-pointer transition-all border ${selectedRepo === repo.name ? "border-purple-500 bg-purple-500/10" : "border-gray-700 bg-[#111118] hover:border-gray-600"}`}>
+                  <p className="font-medium">{repo.name}</p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                    <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {repo.stars?.toLocaleString()}</span>
+                    <span>{repo.language}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Issues List */}
+            <div className="space-y-3">
+              <h2 className="font-semibold text-lg mb-3">
+                {selectedRepo ? `Issues in ${selectedRepo}` : "Select a repo to see issues"}
+              </h2>
+              {issues.map((issue: any) => (
+                <a key={issue.number} href={issue.url} target="_blank" rel="noopener noreferrer"
+                  className="block p-4 rounded-xl border border-gray-700 bg-[#111118] hover:border-gray-500 transition-all">
+                  <p className="font-medium text-sm">{issue.title}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {issue.labels?.map((l: string) => (
+                      <span key={l} className="px-2 py-0.5 text-xs bg-green-500/10 text-green-400 rounded-full">{l}</span>
+                    ))}
+                    <span className="text-xs text-gray-500 ml-auto">#{issue.number}</span>
+                    <ExternalLink className="w-3 h-3 text-gray-500" />
+                  </div>
+                </a>
+              ))}
+              {selectedRepo && issues.length === 0 && (
+                <p className="text-gray-500 text-center py-10">No "good first issue" found in this repo</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

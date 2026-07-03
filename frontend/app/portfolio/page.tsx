@@ -1,65 +1,89 @@
 "use client"
 
-import { Navbar } from "@/components/layout/Navbar"
-import { Sidebar } from "@/components/layout/Sidebar"
-import { StatCard } from "@/components/ui/StatCard"
-import { EmptyState } from "@/components/ui/EmptyState"
-import { GitPullRequest, Github, Star, TrendingUp, ExternalLink } from "lucide-react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useSession } from "next-auth/react"
+import { Star, GitFork, ExternalLink, Loader2, Github, Code, Users } from "lucide-react"
 
 export default function PortfolioPage() {
-  const hasContributions = false // Will be replaced with real data
+  const { data: session } = useSession()
+  const [portfolio, setPortfolio] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const username = session?.user?.name || "BistaDinesh03"
+
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/portfolio/${username}`)
+      .then(r => r.json())
+      .then(d => { setPortfolio(d); setLoading(false) })
+  }, [username])
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-dark-950">
-      <Navbar />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <div className="mb-8 animate-fadeIn">
-            <h1 className="text-3xl font-bold mb-2">Your Portfolio</h1>
-            <p className="text-gray-400">Showcase your open source contributions</p>
-          </div>
+    <div className="min-h-screen bg-[#0a0a0f] text-white">
+      <nav className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 text-transparent bg-clip-text">MergeMind</Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="text-gray-300 hover:text-white text-sm">Dashboard</Link>
+          <Link href="/discover" className="text-gray-300 hover:text-white text-sm">Discover</Link>
+          <Link href="/portfolio" className="text-purple-400 text-sm">Portfolio</Link>
+        </div>
+      </nav>
 
-          {hasContributions ? (
-            <>
-              {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard icon={GitPullRequest} label="Merged PRs" value={0} color="text-emerald-400" />
-                <StatCard icon={Github} label="Repositories" value={0} color="text-blue-400" />
-                <StatCard icon={Star} label="Stars Received" value={0} color="text-yellow-400" />
-                <StatCard icon={TrendingUp} label="Impact Score" value="0%" color="text-purple-400" />
-              </div>
-
-              {/* Timeline */}
-              <div className="glass-card p-6">
-                <h2 className="text-xl font-semibold mb-4">Contribution Timeline</h2>
-                <div className="text-gray-400">Your merged PRs will appear here</div>
-              </div>
-            </>
-          ) : (
-            <EmptyState
-              icon={GitPullRequest}
-              title="No contributions yet"
-              description="Start contributing to open source projects to build your portfolio. We'll help you find the best issues to get started."
-              action={{ label: "Discover Issues", onClick: () => window.location.href = "/discover" }}
-            />
-          )}
-
-          {/* Portfolio Share Card */}
-          <div className="glass-card p-6 mt-8">
-            <h2 className="text-xl font-semibold mb-2">Share Your Portfolio</h2>
-            <p className="text-gray-400 mb-4">
-              Once you have contributions, you can share your portfolio with a custom link.
-            </p>
-            <div className="flex items-center gap-2 p-3 bg-dark-900 rounded-lg border border-gray-700">
-              <code className="text-gray-500 flex-1">https://mergemind.dev/portfolio/your-username</code>
-              <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
-                <ExternalLink className="w-3 h-3" />
-                Preview
-              </button>
+      <div className="max-w-4xl mx-auto p-6">
+        {/* Profile Header */}
+        <div className="flex items-center gap-6 mb-10 bg-[#111118] rounded-xl p-6 border border-gray-800">
+          {portfolio?.avatar && <img src={portfolio.avatar} className="w-20 h-20 rounded-full border-2 border-purple-500" />}
+          <div>
+            <h1 className="text-2xl font-bold">{portfolio?.name || username}</h1>
+            <p className="text-gray-400">@{username}</p>
+            <p className="text-sm text-gray-500 mt-1">{portfolio?.bio || "Open source contributor"}</p>
+            <div className="flex items-center gap-4 mt-3">
+              <span className="flex items-center gap-1 text-sm text-gray-400"><Users className="w-4 h-4" /> {portfolio?.followers} followers</span>
+              <span className="flex items-center gap-1 text-sm text-gray-400"><Code className="w-4 h-4" /> {portfolio?.public_repos} repos</span>
             </div>
           </div>
-        </main>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: "Public Repos", value: portfolio?.public_repos || 0, icon: GitFork, color: "text-blue-400" },
+            { label: "Followers", value: portfolio?.followers || 0, icon: Users, color: "text-green-400" },
+            { label: "Stars Earned", value: portfolio?.repositories?.reduce((s: number, r: any) => s + r.stars, 0) || 0, icon: Star, color: "text-yellow-400" },
+          ].map(s => (
+            <div key={s.label} className="bg-[#111118] rounded-xl p-4 border border-gray-800 text-center">
+              <s.icon className={`w-6 h-6 ${s.color} mx-auto mb-2`} />
+              <p className="text-2xl font-bold">{s.value}</p>
+              <p className="text-xs text-gray-400">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Repos List */}
+        <h2 className="text-xl font-bold mb-4">Repositories</h2>
+        <div className="space-y-3">
+          {portfolio?.repositories?.map((repo: any) => (
+            <a key={repo.name} href={repo.url} target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-between p-4 bg-[#111118] rounded-xl border border-gray-800 hover:border-gray-600 transition-all">
+              <div>
+                <p className="font-medium">{repo.name}</p>
+                <p className="text-xs text-gray-500 mt-1">{repo.description || "No description"}</p>
+                <span className="text-xs text-gray-400 mt-1 inline-block">{repo.language || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-400">
+                <span className="flex items-center gap-1"><Star className="w-4 h-4" /> {repo.stars}</span>
+                <ExternalLink className="w-4 h-4" />
+              </div>
+            </a>
+          ))}
+        </div>
+
+        <p className="text-center text-xs text-gray-600 mt-10">Generated by MergeMind</p>
       </div>
     </div>
   )
