@@ -5,8 +5,6 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    networks:
-      - mergemind
 
   backend:
     build: ./backend
@@ -14,16 +12,14 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    env_file:
-      - ./backend/.env
     environment:
+      - GITHUB_TOKEN=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
+      - DATABASE_URL=sqlite:///./mergemind.db
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=llama3.2:3b
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - ollama
-    networks:
-      - mergemind
 
   frontend:
     build: ./frontend
@@ -36,12 +32,6 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
       - backend
-    networks:
-      - mergemind
 
 volumes:
   ollama_data:
-
-networks:
-  mergemind:
-    driver: bridge
