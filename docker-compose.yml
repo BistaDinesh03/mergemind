@@ -7,10 +7,6 @@ services:
       - ollama_data:/root/.ollama
     networks:
       - mergemind
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      retries: 5
 
   backend:
     build: ./backend
@@ -22,14 +18,13 @@ services:
       - DATABASE_URL=sqlite:///./mergemind.db
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=llama3.2:3b
-      - GITHUB_TOKEN=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
+      - GITHUB_TOKEN=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
       - GITHUB_CLIENT_ID=Ov23liarpCveA9VTsC90
       - GITHUB_CLIENT_SECRET=0f848961013dbd9091c26b011570b5c20f417e9c
       - SECRET_KEY=dev-secret
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
-      ollama:
-        condition: service_healthy
+      - ollama
     networks:
       - mergemind
 
@@ -42,10 +37,6 @@ services:
       - /app/node_modules
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=dev-secret
-      - GITHUB_CLIENT_ID=Ov23liarpCveA9VTsC90
-      - GITHUB_CLIENT_SECRET=0f848961013dbd9091c26b011570b5c20f417e9c
     depends_on:
       - backend
     networks:
