@@ -1,62 +1,69 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/Navbar"
-import { SearchBar } from "@/components/SearchBar"
-import { LanguageFilter } from "@/components/LanguageFilter"
 import { RepoCard, RepoCardSkeleton } from "@/components/RepoCard"
-import { DiscoverSkeleton } from "@/components/Skeletons"
-import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { EmptyState } from "@/components/EmptyState"
-import { useRepos } from "@/lib/useRepos"
+import { Search } from "lucide-react"
+
+const LANGUAGES = ["Python", "JavaScript", "TypeScript", "Rust", "Go"]
 
 export default function DiscoverPage() {
-  const [query, setQuery] = useState("")
+  const [search, setSearch] = useState("")
   const [language, setLanguage] = useState("")
-  const [sort, setSort] = useState("stars")
-  const { repos, total, loading, error, refetch } = useRepos({ query, language, sort })
+  const [repos, setRepos] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  if (loading && repos.length === 0) return <DiscoverSkeleton />
+  useEffect(() => {
+    document.title = "Discover — MergeMind"
+    setLoading(true)
+    fetch("http://localhost:8000/api/github/repositories")
+      .then(r => r.json())
+      .then(d => { setRepos(d.repositories || []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const filtered = repos.filter(r => {
+    if (language && r.language !== language) return false
+    if (search && !r.full_name.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
 
   return (
-    <div className="min-h-screen bg-[#0a0b0f] text-white">
+    <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 sm:mb-2">Discover Repositories</h1>
-          <p className="text-gray-400 text-xs sm:text-sm">Find the perfect open source project</p>
-          {total > 0 && <p className="text-xs text-gray-500 mt-1 sm:mt-2">{total.toLocaleString()} repos found</p>}
+      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-8 py-8 sm:py-10 space-y-6 sm:space-y-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Discover Repositories</h1>
+          <p className="text-sm sm:text-base text-zinc-400 mt-1 sm:mt-2">Find the perfect project to contribute to</p>
+          {!loading && <p className="text-xs sm:text-sm text-zinc-600 mt-1">{filtered.length} repositories found</p>}
         </div>
 
-        {/* Filters - stack on mobile */}
-        <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-            <div className="flex-1"><SearchBar onSearch={setQuery} /></div>
-            <select value={sort} onChange={(e) => setSort(e.target.value)} 
-              className="px-3 py-2.5 sm:py-3 bg-[#111318] border border-gray-700/50 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 w-full sm:w-auto">
-              <option value="stars">Most Stars</option><option value="updated">Recently Updated</option><option value="forks">Most Forks</option>
-            </select>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="relative">
+            <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-zinc-500" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search repositories..."
+              className="w-full h-12 sm:h-[52px] pl-11 sm:pl-14 pr-4 sm:pr-6 bg-[#18181b] border border-white/[0.04] rounded-[14px] text-white placeholder-zinc-500 text-base focus:outline-none focus:ring-2 focus:ring-purple-500/40 transition-all duration-200" />
           </div>
-          <LanguageFilter selected={language} onSelect={setLanguage} />
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <button onClick={() => setLanguage("")} className={`px-3 sm:px-4 py-2 sm:py-2 text-xs sm:text-sm rounded-[14px] font-medium transition-all duration-200 ${!language?"bg-white text-zinc-900":"bg-[#18181b] text-zinc-400 border border-white/[0.04] hover:border-white/[0.08]"}`}>All</button>
+            {LANGUAGES.map(lang => (
+              <button key={lang} onClick={() => setLanguage(lang)} className={`px-3 sm:px-4 py-2 sm:py-2 text-xs sm:text-sm rounded-[14px] font-medium transition-all duration-200 ${language===lang?"bg-white text-zinc-900":"bg-[#18181b] text-zinc-400 border border-white/[0.04] hover:border-white/[0.08]"}`}>{lang}</button>
+            ))}
+          </div>
         </div>
 
-        {error && <ErrorDisplay type="api" message={error} onRetry={refetch} />}
-        
-        {loading && repos.length > 0 && (
+        {loading ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {[...Array(4)].map((_, i) => <RepoCardSkeleton key={i} />)}
+            {[...Array(6)].map((_, i) => <RepoCardSkeleton key={i} />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState type={search ? "search" : "repos"} />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {filtered.map((repo, i) => <RepoCard key={i} repo={repo} />)}
           </div>
         )}
-
-        {!loading && !error && repos.length === 0 && (
-          <EmptyState type={query ? "search" : "repos"} />
-        )}
-
-        {!loading && !error && repos.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {repos.map((repo: any) => <RepoCard key={repo.id} repo={repo} />)}
-          </div>
-        )}
-      </div>
+      </main>
     </div>
   )
 }
