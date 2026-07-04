@@ -1,31 +1,27 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signIn, signOut } from "next-auth/react"
-import { Github, LogOut, Sparkles, Menu, X } from "lucide-react"
+import { useCommandPalette } from "@/components/providers/CommandPaletteProvider"
+import { Github, LogOut, Menu, X, Search } from "lucide-react"
 
 export function Navbar() {
   const { data: session } = useSession()
   const pathname = usePathname()
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [open, setOpen] = useState(false)
+  const { open: openSearch } = useCommandPalette()
+  const menuRef = useRef(null)
 
-  // Close mobile menu on route change
-  useEffect(() => { setMobileOpen(false) }, [pathname])
-
-  // Close on escape key
+  useEffect(() => { setOpen(false) }, [pathname])
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOpen(false) }
-    window.addEventListener("keydown", handleEsc)
-    return () => window.removeEventListener("keydown", handleEsc)
-  }, [])
-
-  // Prevent body scroll when mobile menu open
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : ""
-    return () => { document.body.style.overflow = "" }
-  }, [mobileOpen])
+    if (!open) return
+    const handler = (e) => { if (e.key === "Escape") setOpen(false) }
+    document.addEventListener("keydown", handler)
+    const el = menuRef.current?.querySelector("a, button")
+    if (el) el.focus()
+    return () => document.removeEventListener("keydown", handler)
+  }, [open])
 
   const links = [
     { href: "/dashboard", label: "Dashboard" },
@@ -35,94 +31,37 @@ export function Navbar() {
 
   return (
     <>
-      {/* Skip to main content */}
-      <a href="#main-content" className="skip-to-main">Skip to main content</a>
-
-      <nav className="sticky top-0 z-50 border-b border-white/[0.04] bg-[#09090b]/70 backdrop-blur-2xl" role="navigation" aria-label="Main navigation">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
-          
-          <Link href="/" className="flex items-center gap-3 group flex-shrink-0" aria-label="MergeMind home">
-            <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-violet-600 rounded-[14px] flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <Sparkles className="w-4.5 h-4.5 text-white" aria-hidden="true" />
-            </div>
-            <span className="text-lg font-bold tracking-tight text-white hidden sm:inline">MergeMind</span>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      <nav className="sticky top-0 z-50 border-b border-[#27272a] bg-[#09090b]/85 backdrop-blur-xl" role="navigation" aria-label="Main">
+        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0" aria-label="MergeMind home">
+            <img src="/icon.svg" alt="" className="w-7 h-7" aria-hidden="true" />
+            <span className="text-[15px] font-semibold tracking-tight text-white hidden sm:inline">MergeMind</span>
           </Link>
-
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1" role="menubar">
-            {session && links.map(link => {
-              const isActive = pathname === link.href || pathname?.startsWith(link.href + "/")
-              return (
-                <Link key={link.href} href={link.href} role="menuitem"
-                  aria-current={isActive ? "page" : undefined}
-                  className={`relative px-4 py-2 text-base rounded-[14px] transition-all duration-200 ${
-                    isActive ? "text-white font-medium bg-white/[0.04]" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.02]"
-                  }`}>
-                  {link.label}
-                  {isActive && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-[3px] bg-purple-500 rounded-full" />}
-                </Link>
-              )
+          <div className="hidden md:flex items-center gap-0.5" role="menubar">
+            {session && links.map(l => {
+              const active = pathname === l.href || pathname?.startsWith(l.href + "/")
+              return <Link key={l.href} href={l.href} aria-current={active ? "page" : undefined} className={`px-3.5 py-2 text-[13px] rounded-[14px] transition-colors duration-150 ${active ? "text-white bg-[#18181b]" : "text-zinc-400 hover:text-zinc-200 hover:bg-[#18181b]/40"}`}>{l.label}</Link>
             })}
           </div>
-
-          <div className="flex items-center gap-3">
-            {session ? (
-              <div className="hidden md:flex items-center gap-3">
-                {session.user?.image && (
-                  <img src={session.user.image} alt="Your avatar" className="w-8 h-8 rounded-full ring-1 ring-white/[0.06]" />
-                )}
-                <button onClick={() => signOut()} aria-label="Sign out"
-                  className="flex items-center gap-1.5 px-3 py-2 text-base text-zinc-400 hover:text-zinc-200 rounded-[14px] hover:bg-white/[0.02] transition-all duration-200">
-                  <LogOut className="w-4 h-4" aria-hidden="true" />
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => signIn("github")} 
-                className="hidden md:flex items-center gap-2 h-11 px-5 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-base font-semibold transition-all duration-200 shadow-sm shadow-white/5">
-                <Github className="w-4 h-4" aria-hidden="true" /> Sign in
-              </button>
-            )}
-
-            {/* Mobile hamburger */}
-            <button 
-              onClick={() => setMobileOpen(!mobileOpen)} 
-              className="md:hidden p-2.5 text-zinc-400 hover:text-white rounded-[14px] hover:bg-white/[0.04] transition-all duration-200"
-              aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileOpen}
-            >
-              {mobileOpen ? <X className="w-5 h-5" aria-hidden="true" /> : <Menu className="w-5 h-5" aria-hidden="true" />}
+          <div className="flex items-center gap-2">
+            <button onClick={openSearch} aria-label="Search (Cmd+K)" className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-zinc-400 hover:text-white rounded-[14px] hover:bg-[#18181b]/40 transition-colors duration-150 border border-[#27272a]">
+              <Search className="w-3.5 h-3.5" aria-hidden="true" /><span className="hidden sm:inline">Search</span><kbd className="hidden sm:inline text-[10px] text-zinc-500 bg-[#27272a] px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
             </button>
+            {session ? (
+              <button onClick={() => signOut()} aria-label="Sign out" className="hidden md:flex items-center px-3 py-2 text-[13px] text-zinc-400 hover:text-zinc-200 rounded-[14px] hover:bg-[#18181b]/40 transition-colors duration-150"><LogOut className="w-3.5 h-3.5" aria-hidden="true" /></button>
+            ) : (
+              <button onClick={() => signIn("github")} className="hidden md:flex items-center gap-1.5 h-9 px-4 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-[13px] font-medium transition-all duration-150 active:scale-[0.97]"><Github className="w-3.5 h-3.5" /> Sign in</button>
+            )}
+            <button onClick={() => setOpen(!open)} className="md:hidden p-2 text-zinc-400 rounded-[14px]" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="mobile-menu">{open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
           </div>
         </div>
       </nav>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 top-16 z-40 bg-[#09090b]/95 backdrop-blur-xl animate-fadeIn" role="dialog" aria-label="Mobile navigation">
-          <div className="px-4 py-6 space-y-2">
-            {session && links.map(link => {
-              const isActive = pathname === link.href
-              return (
-                <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`block px-5 py-4 text-lg rounded-[14px] transition-all duration-200 ${
-                    isActive ? "text-white font-medium bg-white/[0.04]" : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.02]"
-                  }`}>{link.label}</Link>
-              )
-            })}
-            <div className="pt-4 mt-4 border-t border-white/[0.04]">
-              {session ? (
-                <button onClick={() => { signOut(); setMobileOpen(false) }} 
-                  className="w-full flex items-center gap-2 px-5 py-4 text-lg text-red-400 hover:bg-red-500/5 rounded-[14px] transition-all duration-200">
-                  <LogOut className="w-5 h-5" aria-hidden="true" /> Sign out
-                </button>
-              ) : (
-                <button onClick={() => signIn("github")} 
-                  className="w-full flex items-center justify-center gap-2 h-14 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-lg font-semibold transition-all duration-200">
-                  <Github className="w-5 h-5" aria-hidden="true" /> Sign in with GitHub
-                </button>
-              )}
-            </div>
+      {open && (
+        <div id="mobile-menu" ref={menuRef} className="md:hidden fixed inset-0 top-14 z-40 bg-[#09090b]/95 backdrop-blur-xl" role="dialog" aria-label="Navigation">
+          <div className="px-4 py-6 space-y-1">
+            {session && links.map(l => { const active = pathname === l.href; return <Link key={l.href} href={l.href} onClick={() => setOpen(false)} aria-current={active?"page":undefined} className={`block px-5 py-4 text-base rounded-[14px] transition-colors ${active?"text-white bg-[#18181b]":"text-zinc-400 hover:text-zinc-200 hover:bg-[#18181b]/40"}`}>{l.label}</Link> })}
+            <div className="pt-4 mt-4 border-t border-[#27272a]">{session ? <button onClick={()=>{signOut();setOpen(false)}} className="w-full text-left px-5 py-4 text-base text-red-400 rounded-[14px]">Sign out</button> : <button onClick={()=>signIn("github")} className="w-full h-14 bg-white text-zinc-900 rounded-[14px] text-base font-semibold">Sign in with GitHub</button>}</div>
           </div>
         </div>
       )}
