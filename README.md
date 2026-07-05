@@ -1,180 +1,284 @@
 <div align="center">
+  <img src="docs/assets/logo-dark.svg" alt="MergeMind logo" width="96" />
 
-<img src="docs/assets/logo-dark.svg" alt="MergeMind" width="72" />
+  # MergeMind
 
-<br />
-<br />
+  AI-powered GitHub issue recommendation platform.
 
-# MergeMind
+  [![License: MIT](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
+  [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com)
+  [![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](https://docker.com)
+  [![Stars](https://img.shields.io/github/stars/BistaDinesh03/mergemind?color=yellow)](https://github.com/BistaDinesh03/mergemind/stargazers)
 
-### Stop searching. Start contributing.
+  <img src="docs/assets/banner.svg" alt="MergeMind banner" width="100%" />
 
-AI analyzes thousands of repositories and tells you exactly which GitHub issue to work on next — in seconds, not hours.
-
-<img src="docs/assets/banner.svg" alt="MergeMind" width="100%" style="border-radius: 12px;" />
-
-<br />
-
-[![License: MIT](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/BistaDinesh03/mergemind?color=yellow)](https://github.com/BistaDinesh03/mergemind/stargazers)
-[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.139-009688)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](https://docker.com)
-[![Tests](https://img.shields.io/badge/tests-16%20passed-green)]()
-[![WCAG](https://img.shields.io/badge/WCAG-2.2%20AA-22c55e)]()
-
+  [Live Demo](https://mergemind.dev) &nbsp;·&nbsp; [Documentation](ARCHITECTURE.md)
 </div>
 
----
+<br>
 
-## The Problem
+## Why MergeMind Exists
 
-You want to contribute to open source. You open GitHub. Millions of issues. Hours of scrolling. You pick one. You submit a PR. It gets ignored or rejected. You try again next weekend.
+Most developers who want to contribute to open source start the same way: they open GitHub, search for something, and get a wall of issues with no real signal attached.
 
-Most developers never ship their first contribution. Not because they cannot code. Because finding the right issue takes longer than writing the fix.
+Search results don't tell you if a maintainer actually responds to pull requests. They don't tell you if an issue has been sitting untouched for a year, or if three other people already tried and gave up in the comments. "Good first issue" labels help a little, but they're applied inconsistently across projects and say nothing about whether the repository itself is healthy.
 
----
+So people end up doing the filtering by hand — opening a dozen tabs, reading through stale threads, guessing at scope. That's an hour gone before a single line of code gets written.
 
-## The Solution
+MergeMind automates that filtering step. It pulls repository and issue data from GitHub, runs it through a scoring model, and gives a ranked recommendation with a plain-language explanation attached. The goal isn't to replace judgment — it's to remove the busywork before it.
 
-MergeMind scans repositories, scores every open issue across 6 dimensions, and gives you one clear recommendation. Each pick includes a full AI breakdown — difficulty, time estimate, merge probability, and why that issue was chosen for you.
+<br>
 
-No tabs. No guesswork. One recommendation. One click.
+## Product Overview
 
----
-
-## How It Works
-Sign in with GitHub
-↓
-AI scans trending repositories
-↓
-Every repo receives a health score
-↓
-Every issue gets scored 0–100
-↓
-Your top recommendation appears
-↓
-Review the AI breakdown
-↓
-Open GitHub and start coding
-
-text
-
----
-
-## Screenshots
-
-<img src="docs/assets/screenshots/dashboard.png" alt="Dashboard" width="100%" style="border-radius: 12px;" />
+MergeMind connects to your GitHub account, analyzes repositories you're interested in, and scores their open issues on difficulty, clarity, and merge likelihood. You get one dashboard, one ranked list, and a reason for every recommendation.
 
 <div align="center">
-  <img src="docs/assets/screenshots/discover.png" alt="Discover" width="48%" />
-  &nbsp;
-  <img src="docs/assets/screenshots/repository.png" alt="Repository" width="48%" />
+  <img src="docs/assets/screenshots/dashboard.png" alt="MergeMind dashboard" width="100%" />
 </div>
 
-<div align="center">
-  <img src="docs/assets/screenshots/issue-analysis.png" alt="Issue Analysis" width="48%" />
-  &nbsp;
-  <img src="docs/assets/screenshots/portfolio.png" alt="Portfolio" width="48%" />
-</div>
-
----
+<br>
 
 ## Features
 
-- **Issue scoring** across difficulty, merge probability, time estimate, beginner friendliness, repository health, and issue clarity
-- **Repository health analysis** — activity, documentation, community, and maintenance scores
-- **AI Mentor** explains why each issue was selected and what to expect
-- **Explainable recommendations** — no black box scores
-- **Portfolio builder** from your merged pull requests
-- **Command palette** (Cmd+K) to search repositories instantly
-- **Dark mode** throughout
-- **Accessible** — WCAG 2.2 AA compliant
+| Feature | Description | Benefit |
+|---|---|---|
+| Issue scoring | Scores each issue on difficulty, merge probability, and clarity | Skip issues that are dead ends before opening them |
+| Repository health analysis | Checks activity, maintenance, and community responsiveness | Avoid contributing to abandoned repos |
+| AI-generated explanations | Every recommendation comes with a short reasoning summary | Understand why an issue was picked, not just that it was |
+| Portfolio tracking | Builds a record from your merged pull requests | Have proof of contribution without manual tracking |
+| GitHub OAuth login | Sign in with your existing GitHub account | No separate account or password to manage |
+| Dark mode | Full dark theme across the interface | Comfortable for long sessions |
 
----
+<br>
+
+## Screenshots
+
+**Dashboard**
+![Dashboard](docs/assets/screenshots/dashboard.png)
+
+**Discover**
+![Discover](docs/assets/screenshots/discover.png)
+
+**Repository Analysis**
+![Repository Analysis](docs/assets/screenshots/repository.png)
+
+**Issue Analysis**
+![Issue Analysis](docs/assets/screenshots/issue-analysis.png)
+
+**Portfolio**
+![Portfolio](docs/assets/screenshots/portfolio.png)
+
+<br>
+
+## Demo
+
+![Demo](docs/assets/demo.gif)
+
+A recorded walkthrough video will be added here once available.
+
+<br>
+
+## How It Works
+GitHub Login
+↓
+Repository Analysis
+↓
+AI Scoring
+↓
+Recommendation
+↓
+Open GitHub
+↓
+Submit PR
+
+<br>
 
 ## Architecture
 
 ```mermaid
-graph LR
-    A[Browser] --> B[Next.js 14]
-    B --> C[FastAPI]
-    C --> D[GitHub API]
-    C --> E[Ollama]
-    C --> F[(SQLite)]
-Layer	Technology
-Frontend	Next.js 14, React 18, TypeScript, Tailwind CSS
-Backend	FastAPI, Python 3.11, SQLAlchemy, Pydantic
-AI Engine	Ollama + Llama 3.2 — local, private, zero cost
-Authentication	NextAuth.js + GitHub OAuth 2.0
-Database	SQLite (dev), PostgreSQL (prod)
-Testing	pytest (16 tests), Vitest, GitHub Actions CI
-DevOps	Docker, Docker Compose
-Quick Start
-bash
+flowchart LR
+
+A[Developer]
+
+B[Next.js Frontend]
+
+C[FastAPI Backend]
+
+D[GitHub API]
+
+E[AI Recommendation Engine]
+
+F[(SQLite / PostgreSQL)]
+
+A --> B
+
+B --> C
+
+C --> D
+
+C --> E
+
+E --> F
+```
+
+| Layer | Responsibility |
+|---|---|
+| Frontend | Renders the dashboard, handles the OAuth session, calls the backend API |
+| Backend | Coordinates GitHub data fetching, scoring requests, and persistence |
+| GitHub API | Source of repository, issue, and pull request data |
+| AI Recommendation Engine | Runs Llama 3.2 through Ollama to score issues and generate explanations |
+| Database | Stores users, scores, and portfolio history |
+
+<br>
+
+## Tech Stack
+
+| Category | Technology | Purpose |
+|---|---|---|
+| Frontend | Next.js 14, React 18, TypeScript | Application UI |
+| Styling | Tailwind CSS | Layout and theming |
+| Backend | FastAPI, Python 3.11 | REST API |
+| Data layer | SQLAlchemy | ORM and models |
+| AI engine | Ollama, Llama 3.2 | Local issue scoring, no external API cost |
+| Auth | NextAuth, GitHub OAuth | Sign-in and session handling |
+| Database | SQLite (dev), PostgreSQL (prod) | Persistence |
+| Infrastructure | Docker | Local and production deployment |
+| CI/CD | GitHub Actions | Automated testing on push |
+
+<br>
+
+## Folder Structure
+mergemind/
+├── backend/
+│   ├── app/
+│   │   ├── routers/       # API route handlers
+│   │   └── services/      # Scoring and analysis logic
+│   └── tests/              # Backend test suite
+├── frontend/
+│   ├── app/                 # Next.js pages and layouts
+│   └── components/          # UI components
+├── docs/                     # Documentation and assets
+├── docker-compose.yml
+└── docker-compose.prod.yml
+
+<br>
+
+## Quick Start
+
+**Clone the repository**
+
+```bash
 git clone https://github.com/BistaDinesh03/mergemind.git
 cd mergemind
+```
+
+**Set environment variables**
+
+```bash
 cp backend/.env.example backend/.env
-# Add your GitHub OAuth credentials to backend/.env
+```
+
+Fill in your GitHub OAuth credentials in `backend/.env`.
+
+**Start with Docker**
+
+```bash
 docker compose up -d
+```
+
+**Open the app**
+
+```bash
 open http://localhost:3000
-Detailed setup in DEPLOYMENT.md.
+```
 
-Project Structure
-text
-mergemind/
-├── backend/              # FastAPI
-│   ├── app/routers/      # API endpoints
-│   ├── app/services/     # Scoring engines
-│   └── tests/            # pytest
-├── frontend/             # Next.js
-│   ├── app/              # Pages
-│   └── components/       # UI
-├── docs/                 # Decision records
-└── docker-compose.yml
-Documentation
-Architecture
+Full setup steps, including running without Docker, are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-Deployment
+<br>
 
-Contributing
+## Environment Variables
 
-Tech Decisions
+| Variable | Required | Description | Example |
+|---|---|---|---|
+| `GITHUB_CLIENT_ID` | Yes | OAuth client ID from your GitHub App | `Iv1.abc123` |
+| `GITHUB_CLIENT_SECRET` | Yes | OAuth client secret | `••••••••` |
+| `DATABASE_URL` | Yes | Connection string for SQLite or PostgreSQL | `postgresql://user:pass@localhost/mergemind` |
+| `OLLAMA_HOST` | Yes | Address of the local Ollama instance | `http://localhost:11434` |
+| `NEXTAUTH_SECRET` | Yes | Secret used to encrypt session tokens | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | No | Base URL of the frontend | `http://localhost:3000` |
 
-Roadmap
-GitHub OAuth
+<br>
 
-Repository health scoring
+## API Overview
 
-Issue opportunity scoring (6 factors)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Service health check |
+| `GET` | `/api/repositories` | List analyzed repositories |
+| `POST` | `/api/repositories/analyze` | Run health analysis on a repository |
+| `GET` | `/api/issues/{repo_id}` | List scored issues for a repository |
+| `GET` | `/api/recommendations` | Fetch the current top recommendation |
+| `GET` | `/api/portfolio` | Fetch a user's contribution portfolio |
+| `POST` | `/api/auth/callback` | GitHub OAuth callback |
 
-AI recommendations with explanations
+<br>
 
-Portfolio generator
+## Documentation
 
-Command palette
+- [ARCHITECTURE.md](ARCHITECTURE.md) — system design and data flow
+- [DEPLOYMENT.md](DEPLOYMENT.md) — production setup and configuration
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to submit changes
+- [CHANGELOG.md](CHANGELOG.md) — version history
+- [LICENSE](LICENSE) — MIT license text
 
-WCAG 2.2 AA accessibility
+<br>
 
-Test suite (16 tests)
+## Roadmap
 
-Production deployment
+**Completed**
+- [x] GitHub OAuth login
+- [x] Repository health analysis
+- [x] Issue scoring engine
+- [x] AI-generated recommendation explanations
+- [x] Portfolio tracking
+- [x] Dark mode
 
-PostgreSQL migration
+**In Progress**
+- [ ] Production deployment
+- [ ] PostgreSQL migration for hosted instances
 
-Contribution streaks
+**Future**
+- [ ] Demo walkthrough video
+- [ ] Browser extension
 
-VS Code extension
+<br>
 
-Contributing
-See CONTRIBUTING.md. Good first issues available.
+## Contributing
 
-License
-MIT © BistaDinesh03
+1. Fork the repository
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Make your changes and add tests where relevant
+4. Run the test suite: `pytest` (backend) and `npm run test` (frontend)
+5. Open a pull request with a clear description
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines. Issues labeled `good first issue` are a good place to start.
+
+<br>
+
+## License
+
+MIT © [BistaDinesh03](https://github.com/BistaDinesh03)
+
+<br>
 
 <div align="center">
-Helping developers spend less time searching and more time contributing.
 
-⭐ Star this repo if you found it useful.
+If MergeMind is useful to you, consider starring the repository.
 
-</div> ```
+Contributions, issues, and feedback are welcome.
+
+[⭐ Star this repo](https://github.com/BistaDinesh03/mergemind/stargazers)
+
+</div>
