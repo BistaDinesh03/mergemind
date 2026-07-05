@@ -5,9 +5,12 @@ import { ErrorBoundary } from "@/components/ErrorBoundary"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: { default: "MergeMind — AI-Powered OSINT", template: "%s — MergeMind" },
+  title: {
+    default: "MergeMind — AI-Powered Open Source Intelligence",
+    template: "%s — MergeMind",
+  },
   description: "Find the best GitHub issues. AI scores every opportunity by difficulty, merge chance, and career value.",
-  keywords: ["open source", "github", "contributions", "AI"],
+  keywords: ["open source", "github", "contributions", "AI", "developer tools"],
   openGraph: { title: "MergeMind", description: "AI-powered open source intelligence", type: "website" },
   robots: { index: true, follow: true },
   icons: { icon: "/favicon.svg" },
