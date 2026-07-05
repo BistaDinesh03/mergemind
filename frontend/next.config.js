@@ -12,19 +12,13 @@ const nextConfig = {
   compress: true,
   reactStrictMode: true,
   modularizeImports: { "lucide-react": { transform: "lucide-react/dist/esm/icons/{{ member }}" } },
+  experimental: { optimizePackageImports: ["lucide-react"] },
   async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: [
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-XSS-Protection", value: "1; mode=block" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        ],
-      },
-    ]
+    return [{ source: "/:path*", headers: [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Cache-Control", value: "public, max-age=3600, must-revalidate" },
+    ]}]
   },
 }
 

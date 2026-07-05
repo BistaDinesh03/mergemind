@@ -13,10 +13,13 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - GITHUB_TOKEN=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
+      - GITHUB_TOKEN=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
       - DATABASE_URL=sqlite:///./mergemind.db
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=llama3.2:3b
+      - GITHUB_CLIENT_ID=Ov23liarpCveA9VTsC90
+      - GITHUB_CLIENT_SECRET=0f848961013dbd9091c26b011570b5c20f417e9c
+      - SECRET_KEY=merge-mind-secret-key-that-is-at-least-32-characters-long
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - ollama
@@ -28,8 +31,16 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=merge-mind-nextauth-secret-key-32-chars
+      - GITHUB_CLIENT_ID=Ov23liarpCveA9VTsC90
+      - GITHUB_CLIENT_SECRET=0f848961013dbd9091c26b011570b5c20f417e9c
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - backend
 

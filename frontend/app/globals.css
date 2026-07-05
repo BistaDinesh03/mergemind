@@ -8,73 +8,48 @@
   body { background-color: #09090b; color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; letter-spacing: -0.01em; }
 }
 
-/* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
-/* ─── FOCUS ─── */
-:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(168,85,247,0.6); border-radius: 8px; }
+html { scroll-behavior: smooth; }
 
-/* ─── SELECTION ─── */
+:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(168,85,247,0.7); border-radius: 8px; }
 ::selection { background: rgba(168,85,247,0.25); color: #fff; }
 
-/* ─── SKIP ─── */
-.skip-link { position: absolute; top: -100px; left: 20px; z-index: 9999; padding: 14px 24px; background: #a855f7; color: #fff; font-weight: 600; font-size: 14px; border-radius: 10px; }
+.skip-link { position: absolute; top: -100px; left: 20px; z-index: 9999; padding: 14px 24px; background: #a855f7; color: #fff; font-weight: 600; font-size: 14px; border-radius: 10px; text-decoration: none; }
 .skip-link:focus { top: 20px; }
 
-/* ─── DESIGN TOKENS ─── */
-:root {
-  --radius-card: 20px;
-  --radius-btn: 14px;
-  --radius-badge: 999px;
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,0.2);
-  --duration-fast: 150ms;
-  --duration-base: 200ms;
-  --duration-slow: 300ms;
-}
-
-/* ─── ANIMATIONS ─── */
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes scaleIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-.animate-fadeIn { animation: fadeIn var(--duration-slow) ease-out forwards; }
-.animate-fadeInUp { animation: fadeInUp var(--duration-slow) ease-out forwards; }
-.animate-scaleIn { animation: scaleIn var(--duration-base) ease-out forwards; }
+.skeleton {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 14px;
+}
 
-/* ─── STANDARD CARD ─── */
-.card {
+/* Consistent card */
+.card-standard {
   background: #18181b;
   border: 1px solid #27272a;
-  border-radius: var(--radius-card);
+  border-radius: 20px;
   padding: 20px;
-  transition: border-color var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out, transform var(--duration-fast) ease-out;
+  transition: border-color 200ms ease-out, transform 200ms ease-out, box-shadow 200ms ease-out;
 }
-.card:hover {
-  border-color: rgba(255,255,255,0.08);
-  box-shadow: var(--shadow-hover);
-  transform: translateY(-1px);
-}
-@media (min-width: 640px) { .card { padding: 24px; } }
+.card-standard:hover { border-color: rgba(255,255,255,0.08); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+@media (min-width: 640px) { .card-standard { padding: 24px; } }
 
-/* ─── STANDARD BUTTON ─── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 600;
-  border-radius: var(--radius-btn);
-  transition: all var(--duration-fast) ease-out;
+/* Consistent button */
+.btn-standard {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 600; border-radius: 14px;
+  transition: all 200ms ease-out;
   cursor: pointer;
 }
-.btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-standard:hover { transform: translateY(-0.5px); }
+.btn-standard:active { transform: scale(0.97); }
+.btn-standard:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .btn-primary { background: #fafafa; color: #09090b; height: 44px; padding: 0 20px; font-size: 14px; }
 .btn-primary:hover { background: #e4e4e7; }
@@ -84,42 +59,14 @@
 
 .btn-lg { height: 52px; padding: 0 32px; font-size: 16px; }
 
-/* ─── SKELETON ─── */
-.skeleton {
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-btn);
-}
-
-/* ─── BADGE ─── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: var(--radius-badge);
-  border: 1px solid;
-}
-
-/* ─── REDUCED MOTION ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
-/* ─── MOBILE ─── */
 @media (max-width: 640px) {
-  .card { padding: 16px; }
   a, button, input, select { min-height: 44px; min-width: 44px; }
   input, select { font-size: 16px !important; }
+  .card-standard { padding: 16px; }
 }
 
-/* ─── HIGH CONTRAST ─── */
-@media (prefers-contrast: high) {
-  :focus-visible { box-shadow: 0 0 0 4px #ffffff; }
-  body { background: #000; }
-}
-
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }

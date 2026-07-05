@@ -1,72 +1,35 @@
 "use client"
 
-import { ArrowRight } from "lucide-react"
+import { Search, GitFork, Sparkles, AlertCircle, BookOpen, Github, ArrowRight, ActivityIcon } from "lucide-react"
 import Link from "next/link"
 
 interface EmptyStateProps {
-  type: "recommendations" | "repos" | "issues" | "portfolio" | "search" | "error"
-  title?: string
-  description?: string
-  action?: { label: string; href: string }
+  type?: "repos" | "issues" | "recommendations" | "portfolio" | "search" | "activity" | "error"
+  title?: string; description?: string
+  action?: { label: string; href?: string; onClick?: () => void }
 }
 
-const illustrations: Record<string, string> = {
-  recommendations: "/illustrations/no-recommendations.svg",
-  repos: "/illustrations/no-repos.svg",
-  issues: "/illustrations/no-issues.svg",
-  portfolio: "/illustrations/no-repos.svg",
-  search: "/illustrations/no-repos.svg",
-  error: "/illustrations/error.svg",
+const configs: Record<string, { icon: any; title: string; description: string }> = {
+  repos: { icon: GitFork, title: "No repositories found", description: "Try adjusting your search or language filter." },
+  issues: { icon: AlertCircle, title: "No open issues", description: "This repository has no open issues right now." },
+  recommendations: { icon: Sparkles, title: "No recommendations yet", description: "Browse repositories to get AI-powered picks." },
+  portfolio: { icon: BookOpen, title: "No repositories", description: "Your GitHub repositories will appear here." },
+  search: { icon: Search, title: "No results found", description: "Try a different search term." },
+  activity: { icon: ActivityIcon, title: "No recent activity", description: "Your actions will appear here." },
+  error: { icon: AlertCircle, title: "Something went wrong", description: "Please try again." },
 }
 
-const defaults: Record<string, { title: string; description: string; action?: { label: string; href: string } }> = {
-  recommendations: {
-    title: "No recommendations yet",
-    description: "Connect your GitHub account and browse repositories to get AI-powered picks.",
-    action: { label: "Browse Repositories", href: "/discover" }
-  },
-  repos: {
-    title: "No repositories found",
-    description: "Try adjusting your search or language filter.",
-    action: { label: "Browse Trending", href: "/discover" }
-  },
-  issues: {
-    title: "No open issues",
-    description: "This repository doesn't have any open issues right now.",
-    action: { label: "Browse Other Repos", href: "/discover" }
-  },
-  portfolio: {
-    title: "Start your journey",
-    description: "Your merged PRs will appear here. Start contributing today.",
-    action: { label: "Find Issues", href: "/discover" }
-  },
-  search: {
-    title: "No results found",
-    description: "Try a different search term.",
-    action: { label: "Browse All", href: "/discover" }
-  },
-  error: {
-    title: "Something went wrong",
-    description: "Please try again or check your connection.",
-    action: { label: "Try Again", href: "/" }
-  },
-}
-
-export function EmptyState({ type, title, description, action }: EmptyStateProps) {
-  const config = defaults[type]
-  const img = illustrations[type]
-
+export function EmptyState({ type = "repos", title, description, action }: EmptyStateProps) {
+  const config = configs[type] || configs.repos
+  const Icon = config.icon
   return (
-    <div className="flex flex-col items-center justify-center py-16 sm:py-20 px-4 text-center animate-fadeInUp">
-      <img src={img} alt="" className="w-28 h-28 sm:w-32 sm:h-32 mb-8 opacity-80" />
-      <h3 className="text-xl font-bold text-zinc-300 mb-2">{title || config.title}</h3>
-      <p className="text-base text-zinc-500 max-w-md mb-8">{description || config.description}</p>
-      {(action || config.action) && (
-        <Link href={(action || config.action)!.href}
-          className="h-[44px] px-6 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200 active:scale-[0.98]">
-          {(action || config.action)!.label} <ArrowRight className="w-4 h-4" />
-        </Link>
-      )}
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-fadeIn">
+      <div className="w-16 h-16 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-5">
+        <Icon className="w-8 h-8 text-zinc-500" />
+      </div>
+      <h3 className="text-lg font-semibold text-zinc-300 mb-2">{title || config.title}</h3>
+      <p className="text-sm text-zinc-500 max-w-md mb-6">{description || config.description}</p>
+      {action && (action.href ? <Link href={action.href} className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2">{action.label} <ArrowRight className="w-4 h-4"/></Link> : action.onClick ? <button onClick={action.onClick} className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold">{action.label}</button> : null)}
     </div>
   )
 }

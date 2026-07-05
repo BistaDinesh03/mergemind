@@ -1,96 +1,53 @@
 <svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
-  
-  <rect width="1280" height="640" fill="#09090b" />
+  <rect width="1280" height="640" fill="#09090b"/>
   
   <defs>
     <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#a855f7" />
-      <stop offset="100%" stop-color="#22c55e" />
+      <stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#22c55e"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="60" result="blur" />
-      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-    </filter>
     <filter id="cardShadow">
-      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000000" flood-opacity="0.4" />
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#000" flood-opacity="0.4"/>
     </filter>
   </defs>
 
-  <!-- Soft purple ambient glow -->
-  <circle cx="640" cy="320" r="300" fill="#a855f7" opacity="0.04" filter="url(#glow)" />
-  
-  <!-- LEFT — Brand Section -->
-  
+  <circle cx="640" cy="320" r="300" fill="#a855f7" opacity="0.04"/>
+
   <!-- Logo -->
-  <rect x="120" y="220" width="64" height="64" rx="16" fill="#18181b" stroke="#27272a" stroke-width="1" />
-  <line x1="152" y1="260" x2="152" y2="272" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" />
-  <line x1="136" y1="260" x2="168" y2="260" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" />
-  <circle cx="152" cy="260" r="3" fill="#c084fc" />
-  <path d="M140 248C140 240 146 234 152 234C158 234 164 240 164 248V254C164 254 158 250 152 250C146 250 140 254 140 254V248Z" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" />
-  <path d="M152 241L153.5 244L156 245.5L153.5 247L152 249.5L150.5 247L148 245.5L150.5 244Z" fill="#c084fc" />
-  
-  <!-- Brand Name -->
-  <text x="200" y="258" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="32" font-weight="700" letter-spacing="-0.5">MergeMind</text>
-  
-  <!-- Tagline -->
-  <text x="120" y="330" fill="#a1a1aa" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="18" font-weight="400">Find the right GitHub issue in seconds.</text>
-  <text x="120" y="358" fill="#71717a" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="14" font-weight="400">AI scores every opportunity by difficulty, merge chance, and career value.</text>
-  
-  <!-- RIGHT — Dashboard Preview Card -->
-  
-  <rect x="680" y="140" width="480" height="380" rx="20" fill="#18181b" stroke="#27272a" stroke-width="1" filter="url(#cardShadow)" />
-  
-  <!-- Browser dots -->
-  <circle cx="704" cy="164" r="5" fill="#ef4444" opacity="0.6" />
-  <circle cx="718" cy="164" r="5" fill="#eab308" opacity="0.6" />
-  <circle cx="732" cy="164" r="5" fill="#22c55e" opacity="0.6" />
-  
-  <!-- Dashboard Content -->
-  
-  <!-- Welcome -->
-  <rect x="704" y="192" width="200" height="10" rx="5" fill="#3f3f46" />
-  <rect x="704" y="210" width="140" height="8" rx="4" fill="#27272a" />
-  
-  <!-- Stats -->
-  <rect x="704" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <rect x="816" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <rect x="928" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <rect x="1040" y="240" width="96" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  
-  <!-- Recommendation Card -->
-  <rect x="704" y="316" width="432" height="90" rx="14" fill="#a855f7" fill-opacity="0.05" stroke="#a855f7" stroke-width="1" stroke-opacity="0.2" />
-  
-  <!-- Rank badge -->
-  <rect x="720" y="336" width="28" height="28" rx="8" fill="#a855f7" fill-opacity="0.2" />
+  <rect x="120" y="220" width="64" height="64" rx="16" fill="#18181b" stroke="#27272a" stroke-width="1"/>
+  <path d="M136 244C136 239.6 138.9 237 142 237C145.1 237 148 239.6 148 244V249C146.6 247.7 144.4 247 142 247C139.6 247 137.4 247.7 136 249V244Z" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M142 239L142.6 240.6L144.2 241.2L142.6 241.8L142 243.4L141.4 241.8L139.8 241.2L141.4 240.6Z" fill="#c084fc"/>
+  <line x1="136" y1="251" x2="148" y2="251" stroke="#a855f7" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="142" cy="251" r="2.2" fill="#c084fc"/>
+  <line x1="142" y1="253.2" x2="142" y2="258" stroke="#a855f7" stroke-width="2" stroke-linecap="round"/>
+
+  <text x="200" y="258" fill="#fff" font-family="system-ui" font-size="32" font-weight="700">MergeMind</text>
+  <text x="120" y="330" fill="#a1a1aa" font-family="system-ui" font-size="18">Find the right GitHub issue in seconds.</text>
+  <text x="120" y="358" fill="#71717a" font-family="system-ui" font-size="14">AI scores every opportunity by difficulty, merge chance, and career value.</text>
+
+  <!-- Dashboard Card -->
+  <rect x="680" y="140" width="480" height="380" rx="20" fill="#18181b" stroke="#27272a" stroke-width="1" filter="url(#cardShadow)"/>
+  <circle cx="704" cy="164" r="5" fill="#ef4444" opacity="0.6"/>
+  <circle cx="718" cy="164" r="5" fill="#eab308" opacity="0.6"/>
+  <circle cx="732" cy="164" r="5" fill="#22c55e" opacity="0.6"/>
+
+  <rect x="704" y="192" width="200" height="10" rx="5" fill="#3f3f46"/>
+  <rect x="704" y="210" width="140" height="8" rx="4" fill="#27272a"/>
+  <rect x="704" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5"/>
+  <rect x="816" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5"/>
+  <rect x="928" y="240" width="100" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5"/>
+  <rect x="1040" y="240" width="96" height="56" rx="12" fill="#18181b" stroke="#27272a" stroke-width="0.5"/>
+
+  <rect x="704" y="316" width="432" height="90" rx="14" fill="#a855f7" fill-opacity="0.05" stroke="#a855f7" stroke-width="1" stroke-opacity="0.2"/>
+  <rect x="720" y="336" width="28" height="28" rx="8" fill="#a855f7" fill-opacity="0.2"/>
   <text x="734" y="355" fill="#c084fc" font-family="monospace" font-size="14" font-weight="700" text-anchor="middle">1</text>
-  
-  <!-- Text lines -->
-  <rect x="760" y="336" width="100" height="8" rx="4" fill="#27272a" />
-  <rect x="760" y="354" width="280" height="10" rx="5" fill="#3f3f46" />
-  <rect x="760" y="374" width="180" height="6" rx="3" fill="#27272a" />
-  
-  <!-- AI Score Badge -->
-  <rect x="1050" y="326" width="70" height="60" rx="14" fill="#a855f7" fill-opacity="0.1" stroke="#a855f7" stroke-width="1" stroke-opacity="0.3" />
-  <text x="1085" y="352" fill="#c084fc" font-family="-apple-system, sans-serif" font-size="22" font-weight="700" text-anchor="middle">92</text>
-  <text x="1085" y="372" fill="#a855f7" font-family="-apple-system, sans-serif" font-size="9" text-anchor="middle" opacity="0.6">AI Score</text>
-  
-  <!-- Score Ring -->
-  <circle cx="1085" cy="356" r="26" fill="none" stroke="url(#scoreGrad)" stroke-width="3" stroke-linecap="round" stroke-dasharray="140" stroke-dashoffset="12" />
-  
-  <!-- Bottom chips -->
-  <rect x="704" y="430" width="80" height="26" rx="13" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <text x="744" y="448" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="middle">Next.js</text>
-  
-  <rect x="796" y="430" width="80" height="26" rx="13" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <text x="836" y="448" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="middle">FastAPI</text>
-  
-  <rect x="888" y="430" width="80" height="26" rx="13" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <text x="928" y="448" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="middle">Ollama</text>
-  
-  <rect x="980" y="430" width="80" height="26" rx="13" fill="#18181b" stroke="#27272a" stroke-width="0.5" />
-  <text x="1020" y="448" fill="#a1a1aa" font-family="monospace" font-size="11" text-anchor="middle">Docker</text>
-  
-  <!-- Bottom URL -->
+  <rect x="760" y="336" width="100" height="8" rx="4" fill="#27272a"/>
+  <rect x="760" y="354" width="280" height="10" rx="5" fill="#3f3f46"/>
+  <rect x="760" y="374" width="180" height="6" rx="3" fill="#27272a"/>
+
+  <rect x="1050" y="326" width="70" height="60" rx="14" fill="#a855f7" fill-opacity="0.1" stroke="#a855f7" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="1085" y="352" fill="#c084fc" font-family="system-ui" font-size="22" font-weight="700" text-anchor="middle">92</text>
+  <text x="1085" y="372" fill="#a855f7" font-family="system-ui" font-size="9" text-anchor="middle">AI Score</text>
+  <circle cx="1085" cy="356" r="26" fill="none" stroke="url(#scoreGrad)" stroke-width="3" stroke-linecap="round" stroke-dasharray="140" stroke-dashoffset="12"/>
+
   <text x="920" y="560" fill="#52525b" font-family="monospace" font-size="12" text-anchor="middle">github.com/BistaDinesh03/mergemind</text>
-  
 </svg>
