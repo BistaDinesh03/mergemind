@@ -6,9 +6,13 @@
   AI-powered GitHub issue recommendation platform.
 
   [![License: MIT](https://img.shields.io/badge/license-MIT-purple)](LICENSE)
+  [![Build](https://img.shields.io/github/actions/workflow/status/BistaDinesh03/mergemind/ci.yml?label=build)](https://github.com/BistaDinesh03/mergemind/actions)
   [![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688)](https://fastapi.tiangolo.com)
+  [![Python](https://img.shields.io/badge/Python-3.11-3776AB)](https://python.org)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
   [![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](https://docker.com)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
   [![Stars](https://img.shields.io/github/stars/BistaDinesh03/mergemind?color=yellow)](https://github.com/BistaDinesh03/mergemind/stargazers)
 
   <img src="docs/assets/banner.svg" alt="MergeMind banner" width="100%" />
@@ -26,7 +30,28 @@ Search results don't tell you if a maintainer actually responds to pull requests
 
 So people end up doing the filtering by hand — opening a dozen tabs, reading through stale threads, guessing at scope. That's an hour gone before a single line of code gets written.
 
-MergeMind automates that filtering step. It pulls repository and issue data from GitHub, runs it through a scoring model, and gives a ranked recommendation with a plain-language explanation attached. The goal isn't to replace judgment — it's to remove the busywork before it.
+MergeMind automates that filtering step. It pulls repository and issue data from GitHub, runs it through a scoring model, and gives a ranked recommendation with a plain-language explanation attached.
+
+<br>
+
+## Project Status
+
+- [x] Production Ready
+- [x] Actively Maintained
+- [x] Open Source
+- [x] MIT Licensed
+- [x] Docker Ready
+- [x] GitHub OAuth
+- [x] AI Powered
+
+<br>
+
+## Current Release
+
+**Version:** `v1.0.0`
+**Status:** Production Ready
+
+The first stable release includes GitHub OAuth login, repository health analysis, AI-powered issue scoring, portfolio tracking, and full Docker support. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 <br>
 
@@ -55,28 +80,39 @@ MergeMind connects to your GitHub account, analyzes repositories you're interest
 
 ## Screenshots
 
-**Dashboard**
-![Dashboard](docs/assets/screenshots/dashboard.png)
+<div align="center">
 
-**Discover**
-![Discover](docs/assets/screenshots/discover.png)
+<img src="docs/assets/screenshots/dashboard.png" width="100%" alt="Dashboard" />
 
-**Repository Analysis**
-![Repository Analysis](docs/assets/screenshots/repository.png)
+<br><br>
 
-**Issue Analysis**
-![Issue Analysis](docs/assets/screenshots/issue-analysis.png)
+<img src="docs/assets/screenshots/discover.png" width="100%" alt="Discover" />
 
-**Portfolio**
-![Portfolio](docs/assets/screenshots/portfolio.png)
+<br><br>
+
+<img src="docs/assets/screenshots/repository.png" width="100%" alt="Repository Analysis" />
+
+<br><br>
+
+<img src="docs/assets/screenshots/issue-analysis.png" width="100%" alt="Issue Analysis" />
+
+<br><br>
+
+<img src="docs/assets/screenshots/portfolio.png" width="100%" alt="Portfolio" />
+
+</div>
 
 <br>
 
 ## Demo
 
-![Demo](docs/assets/demo.gif)
+<div align="center">
+  <img src="docs/assets/demo.gif" alt="MergeMind demo" width="100%" />
 
-A recorded walkthrough video will be added here once available.
+  **Demo Coming Soon**
+
+  A full walkthrough video will be added after the first stable release.
+</div>
 
 <br>
 
@@ -150,6 +186,8 @@ E --> F
 <br>
 
 ## Folder Structure
+
+```text
 mergemind/
 ├── backend/
 │   ├── app/
@@ -162,6 +200,7 @@ mergemind/
 ├── docs/                     # Documentation and assets
 ├── docker-compose.yml
 └── docker-compose.prod.yml
+```
 
 <br>
 
@@ -180,8 +219,6 @@ cd mergemind
 cp backend/.env.example backend/.env
 ```
 
-Fill in your GitHub OAuth credentials in `backend/.env`.
-
 **Start with Docker**
 
 ```bash
@@ -193,8 +230,6 @@ docker compose up -d
 ```bash
 open http://localhost:3000
 ```
-
-Full setup steps, including running without Docker, are in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 <br>
 
@@ -227,11 +262,13 @@ Full setup steps, including running without Docker, are in [DEPLOYMENT.md](DEPLO
 
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — system design and data flow
-- [DEPLOYMENT.md](DEPLOYMENT.md) — production setup and configuration
-- [CONTRIBUTING.md](CONTRIBUTING.md) — how to submit changes
-- [CHANGELOG.md](CHANGELOG.md) — version history
-- [LICENSE](LICENSE) — MIT license text
+| Document | Purpose | Link |
+|---|---|---|
+| Architecture | System design and data flow | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Deployment | Production setup and configuration | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Contributing | How to submit changes | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Changelog | Version history | [CHANGELOG.md](CHANGELOG.md) |
+| License | MIT license text | [LICENSE](LICENSE) |
 
 <br>
 
@@ -275,10 +312,10 @@ MIT © [BistaDinesh03](https://github.com/BistaDinesh03)
 
 <div align="center">
 
-If MergeMind is useful to you, consider starring the repository.
+**Built for developers who love open source.**
 
-Contributions, issues, and feedback are welcome.
+If MergeMind is useful to you, consider giving it a star, forking it, or opening a pull request. Bug reports and feature ideas are always welcome.
 
-[⭐ Star this repo](https://github.com/BistaDinesh03/mergemind/stargazers)
+[⭐ Star](https://github.com/BistaDinesh03/mergemind/stargazers) &nbsp;·&nbsp; [🍴 Fork](https://github.com/BistaDinesh03/mergemind/fork) &nbsp;·&nbsp; [🤝 Contribute](CONTRIBUTING.md) &nbsp;·&nbsp; [Report an Issue](https://github.com/BistaDinesh03/mergemind/issues)
 
 </div>
