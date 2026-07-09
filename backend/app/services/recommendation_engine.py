@@ -1,4 +1,4 @@
-"""Recommendation Engine with structured logging."""
+"""Recommendation Engine with Gemini AI."""
 import logging
 import httpx
 from ..config import settings
@@ -30,9 +30,6 @@ class RecommendationEngine:
                         headers=self.headers,
                         params={"labels": "good first issue", "state": "open", "per_page": 3}
                     )
-                    if r.status_code == 401:
-                        logger.error(f"GitHub API authentication failed. Token may be expired.")
-                        continue
                     if r.status_code != 200:
                         logger.warning(f"GitHub API returned {r.status_code} for {repo_full_name}")
                         continue
@@ -42,8 +39,7 @@ class RecommendationEngine:
                     repo_data = repo_r.json() if repo_r.status_code == 200 else {}
                     
                     for issue in issues:
-                        if "pull_request" in issue:
-                            continue
+                        if "pull_request" in issue: continue
                         labels = [l["name"] for l in issue.get("labels", [])]
                         issue_data = {"title": issue.get("title", ""), "body": issue.get("body", ""), "labels": labels, "comments": issue.get("comments", 0), "assignees": issue.get("assignees", [])}
                         repo_info = {"full_name": f"{owner}/{repo}", "stars": repo_data.get("stargazers_count", 0), "pushed_at": repo_data.get("pushed_at")}
@@ -61,7 +57,7 @@ class RecommendationEngine:
                             "reason": scoring["factors"]["difficulty"]["reason"]
                         })
                 except Exception as e:
-                    logger.error(f"Error processing {repo_full_name}: {str(e)}")
+                    logger.error(f"Error: {repo_full_name}: {str(e)}")
                     continue
         
         all_ranked.sort(key=lambda x: x["overall_score"], reverse=True)

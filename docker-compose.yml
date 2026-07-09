@@ -1,11 +1,4 @@
 services:
-  ollama:
-    image: ollama/ollama:0.5.4
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
   backend:
     build: ./backend
     ports:
@@ -15,11 +8,8 @@ services:
     env_file:
       - .env
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - OLLAMA_MODEL=llama3.2:3b
+      - GEMINI_MODEL=gemini-2.5-flash
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    depends_on:
-      - ollama
 
   frontend:
     build: ./frontend
@@ -40,6 +30,3 @@ services:
     command: sh -c "npm install && npm run dev"
     depends_on:
       - backend
-
-volumes:
-  ollama_data:
