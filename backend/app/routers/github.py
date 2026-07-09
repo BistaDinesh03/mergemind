@@ -33,7 +33,7 @@ async def search_repositories(query: Optional[str] = None, language: Optional[st
 async def get_repository(owner: str, repo: str):
     data = await github_request(f"https://api.github.com/repos/{owner}/{repo}")
     health = HealthScorer.calculate(data)
-    return {"id": data["id"], "full_name": data["full_name"], "description": data.get("description", ""), "owner": {"login": data["owner"]["login"], "avatar": data["owner"]["avatar_url"]}, "stars": data["stargazers_count"], "forks": data["forks_count"], "open_issues": data["open_issues_count"], "watchers": data.get("watchers_count", 0), "language": data.get("language"), "topics": data.get("topics", []), "license": data.get("license", {}).get("spdx_id") if data.get("license") else None, "default_branch": data.get("default_branch", "main"), "pushed_at": data.get("pushed_at"), "updated_at": data.get("updated_at"), "url": data["html_url"], "health": health}
+    return {"id": data["id"], "full_name": data["full_name"], "description": data.get("description", ""), "owner": {"login": data["owner"]["login"], "avatar": data["owner"]["avatar_url"]}, "stars": data["stargazers_count"], "forks": data["forks_count"], "open_issues": data["open_issues_count"], "language": data.get("language"), "topics": data.get("topics", []), "license": data.get("license", {}).get("spdx_id") if data.get("license") else None, "updated_at": data["updated_at"], "url": data["html_url"], "health": health}
 
 @router.get("/repositories/{owner}/{repo}/issues")
 async def get_issues(owner: str, repo: str, labels: Optional[str] = None, sort: str = "updated", order: str = "desc", page: int = 1, per_page: int = 30):
@@ -50,21 +50,16 @@ async def ai_summary(owner: str, repo: str):
 
 @router.get("/portfolio/{username}")
 async def portfolio(username: str):
-    target = username
+    """Returns portfolio for the given username. No fallback to other users."""
     headers = {"Authorization": f"Bearer {settings.github_token}", "Accept": "application/vnd.github.v3+json", "User-Agent": "MergeMind"}
     async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.get(f"https://api.github.com/users/{target}", headers=headers)
+        r = await client.get(f"https://api.github.com/users/{username}", headers=headers)
         if r.status_code != 200:
-            r = await client.get("https://api.github.com/users/BistaDinesh03", headers=headers)
-            target = "BistaDinesh03"
-        data = r.json() if r.status_code == 200 else {}
-        if data.get("public_repos", 0) == 0:
-            r = await client.get("https://api.github.com/users/BistaDinesh03", headers=headers)
-            data = r.json() if r.status_code == 200 else {}
-            target = "BistaDinesh03"
-        repos_r = await client.get(f"https://api.github.com/users/{target}/repos?sort=updated&per_page=10", headers=headers)
+            return {"username": username, "error": "Could not fetch GitHub profile", "followers": 0, "public_repos": 0, "repositories": []}
+        data = r.json()
+        repos_r = await client.get(f"https://api.github.com/users/{username}/repos?sort=updated&per_page=10", headers=headers)
         repos = repos_r.json() if repos_r.status_code == 200 else []
-    return {"username": target, "name": data.get("name") or data.get("login"), "bio": data.get("bio"), "avatar": data.get("avatar_url"), "followers": data.get("followers", 0), "public_repos": data.get("public_repos", 0), "repositories": [{"name": r2["full_name"], "stars": r2["stargazers_count"], "language": r2.get("language"), "description": r2.get("description", ""), "url": r2["html_url"]} for r2 in repos], "generated_by": "MergeMind"}
+    return {"username": username, "name": data.get("name") or data.get("login"), "bio": data.get("bio"), "avatar": data.get("avatar_url"), "followers": data.get("followers", 0), "public_repos": data.get("public_repos", 0), "repositories": [{"name": r2["full_name"], "stars": r2["stargazers_count"], "language": r2.get("language"), "description": r2.get("description", ""), "url": r2["html_url"]} for r2 in repos], "generated_by": "MergeMind"}
 
 @router.get("/user/{username}")
 async def user(username: str):

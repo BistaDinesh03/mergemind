@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
-import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw } from "lucide-react"
+import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw, Loader2 } from "lucide-react"
 
 const API = "http://localhost:8000"
 
@@ -16,28 +16,51 @@ export default function DashboardPage() {
   const username = session?.user?.name || null
 
   useEffect(() => {
-    if (status !== "authenticated" || !username) return
+    if (status === "loading") return
+    if (status !== "authenticated" || !username) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
+
     fetch(API + "/api/recommendations/top?limit=1")
-      .then(r => r.json())
-      .then(d => { if (d?.recommendations?.length > 0) setTopIssue(d.recommendations[0]) })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-    fetch(API + "/api/portfolio/" + username)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch recommendations")
+        return r.json()
+      })
       .then(d => {
-        if (d && d.public_repos !== undefined) {
-          setStats({
-            repos: d.public_repos,
-            stars: d.repositories?.reduce((s, r) => s + (r.stars || 0), 0) || 0,
-            followers: d.followers || 0,
-            avatar: d.avatar,
-            name: d.name || username
-          })
+        if (d?.recommendations?.length > 0) {
+          setTopIssue(d.recommendations[0])
         }
       })
-      .catch(() => {})
+      .catch(err => {
+        console.error("Recommendations error:", err)
+      })
+
+    fetch(API + "/api/portfolio/" + username)
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to fetch portfolio")
+        return r.json()
+      })
+      .then(d => {
+        if (d && !d.error) {
+          setStats({
+            repos: d.public_repos || 0,
+            stars: d.repositories?.reduce((s, r) => s + (r.stars || 0), 0) || 0,
+            followers: d.followers || 0,
+            avatar: d.avatar || null,
+            name: d.name || username
+          })
+        } else {
+          setStats({ repos: 0, stars: 0, followers: 0, avatar: null, name: username })
+        }
+      })
+      .catch(err => {
+        console.error("Portfolio error:", err)
+        setStats({ repos: 0, stars: 0, followers: 0, avatar: null, name: username })
+      })
+      .finally(() => setLoading(false))
   }, [status, username])
 
   const extractLink = (issue) => {
@@ -46,12 +69,11 @@ export default function DashboardPage() {
     return "/repo/" + parts[0] + "/" + parts[1] + "/issues/" + (issue.issue_number || "1")
   }
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-[#09090b]">
-        <Navbar />
-        <div className="max-w-2xl mx-auto px-6 py-16">
-          <div className="h-80 skeleton rounded-[24px]" />
+      <div className="min-h-screen bg-[#09090b]"><Navbar />
+        <div className="max-w-2xl mx-auto px-6 py-16 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
         </div>
       </div>
     )
@@ -59,13 +81,12 @@ export default function DashboardPage() {
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen bg-[#09090b]">
-        <Navbar />
+      <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex flex-col items-center justify-center py-32">
           <Github className="w-10 h-10 text-zinc-600 mb-4" />
           <h2 className="text-lg font-bold mb-2">Sign in required</h2>
-          <p className="text-sm text-zinc-400 mb-6">Connect your GitHub account to see your dashboard.</p>
-          <button onClick={() => signIn("github")} className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold">
+          <p className="text-sm text-zinc-400 mb-6">Connect your GitHub account to see your personalized dashboard.</p>
+          <button onClick={() => signIn("github")} className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold hover:bg-zinc-200 transition-colors">
             Sign in with GitHub
           </button>
         </div>
@@ -75,8 +96,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#09090b]">
-        <Navbar />
+      <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex flex-col items-center justify-center py-32">
           <AlertCircle className="w-10 h-10 text-red-400 mb-4" />
           <p className="text-sm text-zinc-400 mb-6">{error}</p>
@@ -89,24 +109,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white">
-      <Navbar />
+    <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-2xl mx-auto px-6 py-12 space-y-10">
         {stats && (
           <div className="flex items-center gap-3">
-            {stats.avatar && <img src={stats.avatar} alt="" className="w-9 h-9 rounded-full ring-1 ring-[#27272a]" />}
+            {stats.avatar ? (
+              <img src={stats.avatar} alt="" className="w-9 h-9 rounded-full ring-1 ring-[#27272a]" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-[#27272a] flex items-center justify-center">
+                <Github className="w-5 h-5 text-zinc-500" />
+              </div>
+            )}
             <div>
-              <h1 className="text-xl font-bold">Good morning, {stats.name} 👋</h1>
-              <p className="text-sm text-zinc-500">{stats.repos} repos · {stats.followers} followers</p>
+              <h1 className="text-xl font-bold">Good morning, {stats.name} [WAVE]</h1>
+              <p className="text-sm text-zinc-500">{stats.repos} repos {String.fromCharCode(183)} {stats.followers} followers</p>
             </div>
           </div>
         )}
 
-        {topIssue && (
+        {topIssue ? (
           <div className="bg-[#18181b] border border-purple-500/20 rounded-[24px] p-6 sm:p-8">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <p className="text-xs font-semibold text-purple-300 uppercase">Today is Best Pick</p>
+              <p className="text-xs font-semibold text-purple-300 uppercase tracking-wide">Today&apos;s Best Pick</p>
             </div>
             <h2 className="text-xl font-bold mb-2">{topIssue.title}</h2>
             <p className="text-sm text-zinc-500 font-mono mb-4">{topIssue.repo}</p>
@@ -124,8 +149,16 @@ export default function DashboardPage() {
                 <Award className="w-4 h-4 inline mr-2" />{topIssue.overall_score}/100
               </span>
             </div>
-            <Link href={extractLink(topIssue)} className="h-[48px] px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2">
+            <Link href={extractLink(topIssue)} className="h-[48px] px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
               View AI Breakdown <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8 text-center">
+            <Sparkles className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
+            <p className="text-sm text-zinc-500">No recommendations yet. Try discovering repositories first.</p>
+            <Link href="/discover" className="mt-4 h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+              Discover Repos <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}
