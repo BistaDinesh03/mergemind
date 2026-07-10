@@ -12,12 +12,53 @@ import {
 
 const API = "http://localhost:8000"
 
+interface HealthCategory {
+  score: number
+  label: string
+  icon?: string
+  reasons?: string[]
+}
+
+interface Health {
+  overall: number
+  status: string
+  categories: Record<string, HealthCategory>
+}
+
+interface RepoData {
+  full_name: string
+  description: string
+  stars: number
+  forks: number
+  open_issues: number
+  watchers: number
+  default_branch: string
+  language: string
+  license: string | null
+  pushed_at: string
+  url: string
+  owner: {
+    avatar: string
+  }
+  topics: string[]
+  health: Health
+}
+
+interface Issue {
+  id: number
+  number: number
+  title: string
+  comments: number
+  labels: string[]
+  is_beginner_friendly: boolean
+}
+
 export default function RepoDetailPage() {
   const params = useParams()
   const owner = params?.owner as string
   const repo = params?.repo as string
-  const [data, setData] = useState(null)
-  const [issues, setIssues] = useState([])
+  const [data, setData] = useState<RepoData | null>(null)
+  const [issues, setIssues] = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -52,11 +93,11 @@ export default function RepoDetailPage() {
     )
   }
 
-  const health = data?.health || { overall: 75, status: "Good", categories: {} }
+  const health = data.health || { overall: 75, status: "Good", categories: {} }
   const categories = health.categories || {}
-  const stars = data?.stars || 0
-  const forks = data?.forks || 0
-  const openIssues = data?.open_issues || 0
+  const stars = data.stars || 0
+  const forks = data.forks || 0
+  const openIssues = data.open_issues || 0
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
@@ -67,24 +108,24 @@ export default function RepoDetailPage() {
         <div className="flex items-center gap-2 text-sm text-zinc-500">
           <Link href="/discover" className="hover:text-zinc-300 transition-colors">Discover</Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-zinc-200 font-medium">{data?.full_name || `${owner}/${repo}`}</span>
+          <span className="text-zinc-200 font-medium">{data.full_name || `${owner}/${repo}`}</span>
         </div>
 
-        {/* ═══ REPO HEADER — Compact, informative ═══ */}
+        {/* REPO HEADER */}
         <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
           <div className="flex items-start gap-5">
-            <img src={data?.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} 
+            <img src={data.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} 
               alt="" className="w-14 h-14 rounded-full ring-1 ring-[#27272a] flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold">{data?.full_name || `${owner}/${repo}`}</h1>
-              <p className="text-zinc-400 text-base mt-1">{data?.description || "No description"}</p>
+              <h1 className="text-2xl font-bold">{data.full_name || `${owner}/${repo}`}</h1>
+              <p className="text-zinc-400 text-base mt-1">{data.description || "No description"}</p>
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {data?.topics?.slice(0, 6).map(t => (
+                {data.topics?.slice(0, 6).map((t: string) => (
                   <span key={t} className="px-2.5 py-1 text-xs bg-blue-500/5 text-blue-300 rounded-full border border-blue-500/10">{t}</span>
                 ))}
               </div>
             </div>
-            <a href={data?.url || `https://github.com/${owner}/${repo}`} target="_blank" rel="noopener noreferrer"
+            <a href={data.url || `https://github.com/${owner}/${repo}`} target="_blank" rel="noopener noreferrer"
               className="h-10 px-5 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200 active:scale-[0.98] flex-shrink-0">
               <ExternalLink className="w-4 h-4" /> GitHub
             </a>
@@ -96,11 +137,11 @@ export default function RepoDetailPage() {
               { icon: Star, label: "Stars", value: stars.toLocaleString(), color: "text-yellow-400" },
               { icon: GitFork, label: "Forks", value: forks.toLocaleString(), color: "text-blue-400" },
               { icon: AlertCircle, label: "Issues", value: openIssues, color: "text-red-400" },
-              { icon: Users, label: "Watchers", value: data?.watchers?.toLocaleString() || "—", color: "text-green-400" },
-              { icon: GitBranch, label: "Branch", value: data?.default_branch || "main", color: "text-zinc-400" },
-              { icon: Package, label: "Release", value: data?.latest_release?.tag || "—", color: "text-purple-400" },
-              { icon: Shield, label: "License", value: data?.license || "—", color: "text-zinc-400" },
-              { icon: Clock, label: "Updated", value: data?.pushed_at ? new Date(data.pushed_at).toLocaleDateString() : "—", color: "text-zinc-400" },
+              { icon: Users, label: "Watchers", value: data.watchers?.toLocaleString() || "—", color: "text-green-400" },
+              { icon: GitBranch, label: "Branch", value: data.default_branch || "main", color: "text-zinc-400" },
+              { icon: Package, label: "Release", value: "—", color: "text-purple-400" },
+              { icon: Shield, label: "License", value: data.license || "—", color: "text-zinc-400" },
+              { icon: Clock, label: "Updated", value: data.pushed_at ? new Date(data.pushed_at).toLocaleDateString() : "—", color: "text-zinc-400" },
             ].map(s => (
               <div key={s.label} className="text-center p-3 bg-[#09090b]/50 rounded-[14px]">
                 <s.icon className={`w-3.5 h-3.5 ${s.color} mx-auto mb-1`} />
@@ -111,10 +152,10 @@ export default function RepoDetailPage() {
           </div>
         </div>
 
-        {/* ═══ TWO COLUMN: Health + AI ═══ */}
+        {/* TWO COLUMN: Health + AI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* HEALTH SCORE — The Hero */}
+          {/* HEALTH SCORE */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Overall Score */}
@@ -177,24 +218,24 @@ export default function RepoDetailPage() {
             </div>
           </div>
 
-          {/* AI SUMMARY — Sticky sidebar */}
+          {/* AI SUMMARY */}
           <div className="space-y-5">
             <div className="bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/20 rounded-[20px] p-6 sticky top-20">
               <h3 className="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" /> AI Summary
               </h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                {data?.full_name || `${owner}/${repo}`} is a {data?.language || "popular"} repository with {stars.toLocaleString()} stars and {openIssues} open issues.
+                {data.full_name || `${owner}/${repo}`} is a {data.language || "popular"} repository with {stars.toLocaleString()} stars and {openIssues} open issues.
                 {health.overall >= 80 ? " The maintainers are active and the project is well-documented. Great for contributors of all levels." : 
                  health.overall >= 60 ? " The project shows moderate activity. Review the open issues before contributing." : 
                  " Activity appears limited. Check recent commits before investing time."}
               </p>
-              <p className="text-[10px] text-zinc-600 mt-3">Generated by Llama 3.2</p>
+              <p className="text-[10px] text-zinc-600 mt-3">Generated by Google Gemini 2.5 Flash</p>
             </div>
           </div>
         </div>
 
-        {/* ═══ OPEN ISSUES ═══ */}
+        {/* OPEN ISSUES */}
         <section>
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -218,7 +259,7 @@ export default function RepoDetailPage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {issues.map((issue: any) => (
+              {issues.map((issue: Issue) => (
                 <Link key={issue.id} href={`/repo/${owner}/${repo}/issues/${issue.number}`}
                   className="flex items-center justify-between bg-[#18181b] border border-[#27272a] rounded-[20px] p-4 hover:border-zinc-600 transition-all duration-200 group">
                   <div className="flex items-center gap-4 min-w-0 flex-1">

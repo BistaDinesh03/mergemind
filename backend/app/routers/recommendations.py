@@ -1,29 +1,26 @@
-from fastapi import APIRouter, Query
-from typing import Optional, List
-from ..services.recommendation_engine import recommendation_engine
+from fastapi import APIRouter, Query, Request, HTTPException
+from typing import Optional
+from ..services.recommendation_engine import RecommendationEngine
+from .auth import get_optional_user
 
 router = APIRouter()
 
-@router.get("/top")
-async def top_recommendations(
-    languages: Optional[str] = Query(default=None, description="Comma-separated languages"),
-    limit: int = Query(default=5, ge=1, le=10)
-):
-    """Get top recommended issues"""
-    lang_list = languages.split(",") if languages else None
-    recommendations = await recommendation_engine.get_top_recommendations(lang_list, limit)
-    
-    return {
-        "count": len(recommendations),
-        "recommendations": recommendations,
-        "refreshed_at": "now"
-    }
 
-@router.get("/personalized/{username}")
-async def personalized_recommendations(
-    username: str,
-    limit: int = Query(default=5)
+@router.get("/top")
+async def get_recommendations(
+    request: Request,
+    limit: int = Query(default=5, ge=1, le=20),
+    language: Optional[str] = None
 ):
-    """Get personalized recommendations based on user's GitHub profile"""
-    result = await recommendation_engine.get_personalized_recommendations(username, limit)
-    return result
+    """
+    Get top issue recommendations.
+    Personalized if user is authenticated.
+    """
+    username = await get_optional_user(request)
+    engine = RecommendationEngine()
+    recommendations = await engine.get_recommendations(
+        username=username,
+        limit=limit,
+        language=language
+    )
+    return {"recommendations": recommendations, "personalized": username is not None}

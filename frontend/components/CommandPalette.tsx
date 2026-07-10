@@ -191,7 +191,7 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
                   >
                     {/* Avatar placeholder */}
                     <div className="w-8 h-8 rounded-full bg-[#27272a] flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-zinc-400 font-bold">{repo.full_name[0].toUpperCase()}</span>
+                      <span className="text-xs text-zinc-400 font-bold">{repo.full_name?.[0]?.toUpperCase() || "?"}</span>
                     </div>
 
                     <div className="flex-1 min-w-0">

@@ -17,7 +17,7 @@ function OAuthLoadingScreen() {
     let i = 0
     const timer = setInterval(() => {
       i++
-      if (i < messages.length) setMessage(messages[i])
+      if (i < messages.length) setMessage(messages[i] || "Connecting your GitHub account...")
       else clearInterval(timer)
     }, 1500)
     return () => clearInterval(timer)

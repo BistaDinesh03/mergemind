@@ -7,12 +7,29 @@ import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, Aler
 
 const API = "http://localhost:8000"
 
+interface Stats {
+  repos: number
+  stars: number
+  followers: number
+  avatar: string | null
+  name: string
+}
+
+interface TopIssue {
+  title: string
+  repo: string
+  issue_number: number
+  merge_chance: number
+  estimated_hours: string
+  overall_score: number
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession()
-  const [topIssue, setTopIssue] = useState(null)
-  const [stats, setStats] = useState(null)
+  const [topIssue, setTopIssue] = useState<TopIssue | null>(null)
+  const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const username = session?.user?.name || null
 
   useEffect(() => {
@@ -47,7 +64,7 @@ export default function DashboardPage() {
         if (d && !d.error) {
           setStats({
             repos: d.public_repos || 0,
-            stars: d.repositories?.reduce((s, r) => s + (r.stars || 0), 0) || 0,
+            stars: d.repositories?.reduce((s: number, r: any) => s + (r.stars || 0), 0) || 0,
             followers: d.followers || 0,
             avatar: d.avatar || null,
             name: d.name || username
@@ -63,7 +80,7 @@ export default function DashboardPage() {
       .finally(() => setLoading(false))
   }, [status, username])
 
-  const extractLink = (issue) => {
+  const extractLink = (issue: TopIssue) => {
     if (!issue?.repo) return "#"
     const parts = issue.repo.split("/")
     return "/repo/" + parts[0] + "/" + parts[1] + "/issues/" + (issue.issue_number || "1")
@@ -121,8 +138,8 @@ export default function DashboardPage() {
               </div>
             )}
             <div>
-              <h1 className="text-xl font-bold">Good morning, {stats.name} [WAVE]</h1>
-              <p className="text-sm text-zinc-500">{stats.repos} repos {String.fromCharCode(183)} {stats.followers} followers</p>
+              <h1 className="text-xl font-bold">Good morning, {stats.name} 👋</h1>
+              <p className="text-sm text-zinc-500">{stats.repos} repos · {stats.followers} followers</p>
             </div>
           </div>
         )}
