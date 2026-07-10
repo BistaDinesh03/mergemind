@@ -50,7 +50,20 @@ export interface GitHubIssue {
   is_beginner_friendly: boolean
 }
 
-export interface IssueDetail extends GitHubIssue {
+export interface IssueDetail {
+  id: number
+  number: number
+  title: string
+  body?: string
+  state: string
+  labels: string[]
+  comments_count?: number
+  created_at: string
+  updated_at?: string
+  url: string
+  author?: GitHubOwner
+  assignees?: GitHubOwner[]
+  is_beginner_friendly: boolean
   repository: { full_name: string; stars: number; language?: string }
   comments: GitHubComment[]
   scoring: IssueScore

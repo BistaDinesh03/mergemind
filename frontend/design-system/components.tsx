@@ -49,7 +49,18 @@ Button.displayName = "Button"
 // LINK BUTTON
 // ═══════════════════════════════════════════════════════
 
-export function LinkButton({ href, variant = "primary", size = "md", leftIcon, rightIcon, children, external, className = "" }: any) {
+interface LinkButtonProps {
+  href: string
+  variant?: ButtonVariant
+  size?: ButtonSize
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
+  children?: React.ReactNode
+  external?: boolean
+  className?: string
+}
+
+export function LinkButton({ href, variant = "primary" as ButtonVariant, size = "md" as ButtonSize, leftIcon, rightIcon, children, external, className = "" }: LinkButtonProps) {
   return (
     <Link href={href} target={external ? "_blank" : undefined}
       className={`${buttonBase} ${buttonVariants[variant]} ${buttonSizes[size]} ${className}`}>
@@ -62,7 +73,14 @@ export function LinkButton({ href, variant = "primary", size = "md", leftIcon, r
 // INPUT
 // ═══════════════════════════════════════════════════════
 
-export const Input = forwardRef<HTMLInputElement, any>(
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  error?: string
+  hint?: string
+  leftIcon?: React.ReactNode
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, leftIcon, className = "", ...props }, ref) => (
     <div className="space-y-1.5">
       {label && <label className="text-sm font-medium text-zinc-300">{label}</label>}
@@ -93,13 +111,13 @@ interface CardProps {
   className?: string
 }
 
-const cardVariants = {
+const cardVariants: Record<string, string> = {
   default: "bg-[#18181b] border border-[#27272a]",
   featured: "bg-[#18181b] border border-purple-500/20 shadow-lg shadow-purple-500/5",
   stat: "bg-[#18181b]/50 border border-[#27272a]/50",
 }
 
-const cardPadding = { md: "p-5 sm:p-6", lg: "p-6 sm:p-8" }
+const cardPadding: Record<string, string> = { md: "p-5 sm:p-6", lg: "p-6 sm:p-8" }
 
 export function Card({ children, variant = "default", hover = false, padding = "md", className = "" }: CardProps) {
   return (
@@ -149,7 +167,15 @@ const alertVariants: Record<AlertVariant, string> = {
 
 const alertIcons: Record<AlertVariant, any> = { info: Info, success: CheckCircle, warning: AlertCircle, error: AlertCircle }
 
-export function Alert({ children, variant = "info", title, onClose, className = "" }: any) {
+interface AlertProps {
+  children: React.ReactNode
+  variant?: AlertVariant
+  title?: string
+  onClose?: () => void
+  className?: string
+}
+
+export function Alert({ children, variant = "info", title, onClose, className = "" }: AlertProps) {
   const Icon = alertIcons[variant]
   return (
     <div className={`flex items-start gap-3 border rounded-[20px] p-5 animate-fadeInUp ${alertVariants[variant]} ${className}`}>

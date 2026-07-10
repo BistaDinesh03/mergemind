@@ -6,24 +6,26 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+interface IssueData {
+  title: string
+  repo: string
+  url?: string
+  overall_score?: number
+  difficulty_score?: number
+  difficulty?: string
+  merge_chance?: number
+  time_estimate?: string
+  estimated_hours?: string
+  beginner_score?: number
+  repo_health?: number
+  issue_number?: number
+  reason?: string
+  labels?: string[]
+  verdict?: string
+}
+
 interface AIRecommendationProps {
-  issue: {
-    title: string
-    repo: string
-    url?: string
-    overall_score?: number
-    difficulty_score?: number
-    difficulty?: string
-    merge_chance?: number
-    time_estimate?: string
-    estimated_hours?: string
-    beginner_score?: number
-    repo_health?: number
-    issue_number?: number
-    reason?: string
-    labels?: string[]
-    verdict?: string
-  }
+  issue: IssueData
   variant?: "hero" | "card" | "compact"
   linkToDetail?: string
 }
@@ -36,12 +38,14 @@ export function AIRecommendationCard({ issue, variant = "card", linkToDetail }: 
                        score >= 60 ? "text-blue-400 bg-blue-500/10 border-blue-500/20" : 
                        "text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
 
+  const diffScore = issue.difficulty_score || 50
+  
   const factors = [
     { 
       icon: Thermometer, 
       label: "Difficulty", 
-      value: issue.difficulty || (issue.difficulty_score > 80 ? "Easy" : issue.difficulty_score > 50 ? "Medium" : "Hard"),
-      score: issue.difficulty_score,
+      value: issue.difficulty || (diffScore > 80 ? "Easy" : diffScore > 50 ? "Medium" : "Hard"),
+      score: diffScore,
       color: "text-green-400",
       bg: "bg-green-500/10",
       bar: "bg-green-500"
@@ -85,7 +89,7 @@ export function AIRecommendationCard({ issue, variant = "card", linkToDetail }: 
     { 
       icon: Smile, 
       label: "Beginner Friendly", 
-      value: issue.beginner_score > 80 ? "Very" : "Yes",
+      value: (issue.beginner_score || 0) > 80 ? "Very" : "Yes",
       score: issue.beginner_score || 80,
       color: "text-amber-400",
       bg: "bg-amber-500/10",

@@ -6,11 +6,27 @@ import { Star, Users, GitFork, Layers, Github, AlertCircle, RefreshCw, Loader2, 
 
 const API = "http://localhost:8000"
 
+interface Repo {
+  name: string
+  stars: number
+  language: string | null
+  url: string
+}
+
+interface PortfolioData {
+  username: string
+  name: string
+  avatar: string | null
+  followers: number
+  public_repos: number
+  repositories: Repo[]
+}
+
 export default function PortfolioPage() {
   const { data: session, status } = useSession()
-  const [data, setData] = useState(null)
+  const [data, setData] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const username = session?.user?.name || null
 
   useEffect(() => {
@@ -86,8 +102,8 @@ export default function PortfolioPage() {
     )
   }
 
-  const totalStars = data.repositories?.reduce((s, r) => s + (r.stars || 0), 0) || 0
-  const languages = [...new Set(data.repositories?.map(r => r.language).filter(Boolean) || [])]
+  const totalStars = data.repositories?.reduce((s: number, r: Repo) => s + (r.stars || 0), 0) || 0
+  const languages = [...new Set(data.repositories?.map((r: Repo) => r.language).filter(Boolean) || [])]
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -131,7 +147,7 @@ export default function PortfolioPage() {
           <h2 className="text-lg font-bold mb-4">Repositories ({data.public_repos || 0})</h2>
           {data.repositories && data.repositories.length > 0 ? (
             <div className="space-y-2">
-              {data.repositories.map(repo => (
+              {data.repositories.map((repo: Repo) => (
                 <a
                   key={repo.name}
                   href={repo.url}

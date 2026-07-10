@@ -1,93 +1,123 @@
-"""Recommendation Engine — Personalized per user."""
-import logging
+"""Recommendation engine — personalized issue recommendations."""
 import httpx
 from ..config import settings
-from .issue_scorer import issue_scorer
+from .ai_service import ai_service
+from .health_scorer import HealthScorer
 
-logger = logging.getLogger("mergemind")
+# Well-known beginner-friendly repos
+DEFAULT_REPOS = [
+    ("facebook/react", ["good first issue"]),
+    ("microsoft/vscode", ["good first issue"]),
+    ("fastapi/fastapi", ["good first issue"]),
+    ("pallets/flask", ["good first issue"]),
+    ("tiangolo/sqlmodel", ["good first issue"]),
+    ("vercel/next.js", ["good first issue"]),
+    ("golang/go", ["good first issue"]),
+    ("rust-lang/rust", ["good first issue"]),
+]
+
 
 class RecommendationEngine:
-    def __init__(self):
-        self.headers = {"Authorization": f"Bearer {settings.github_token}", "Accept": "application/vnd.github.v3+json", "User-Agent": "MergeMind"}
     
-    async def get_top_recommendations(self, username: str = None, limit: int = 5):
-        """Get personalized recommendations based on user's GitHub profile."""
+    async def get_recommendations(
+        self,
+        username: str = None,
+        limit: int = 5,
+        language: str = None
+    ) -> list[dict]:
+        """Get personalized issue recommendations."""
+        headers = {
+            "Authorization": f"Bearer {settings.github_token}",
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "MergeMind"
+        }
         
-        # Step 1: Get user's languages from their repos
+        # Get user's languages if authenticated
         user_languages = []
         if username:
-            try:
-                async with httpx.AsyncClient(timeout=15) as client:
-                    r = await client.get(f"https://api.github.com/users/{username}/repos?per_page=20&sort=updated", headers=self.headers)
-                    if r.status_code == 200:
-                        repos = r.json()
-                        lang_counts = {}
-                        for repo in repos:
-                            lang = repo.get("language")
-                            if lang:
-                                lang_counts[lang] = lang_counts.get(lang, 0) + 1
-                        user_languages = sorted(lang_counts, key=lang_counts.get, reverse=True)[:3]
-            except Exception as e:
-                logger.warning(f"Could not fetch user languages: {e}")
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get(
+                    f"https://api.github.com/users/{username}/repos",
+                    params={"sort": "updated", "per_page": 20, "type": "owner"},
+                    headers=headers
+                )
+                if r.status_code == 200:
+                    repos = r.json()
+                    user_languages = list(set(
+                        repo.get("language") for repo in repos
+                        if repo.get("language") and not repo.get("fork")
+                    ))[:5]
         
-        if not user_languages:
-            user_languages = ["python", "javascript", "typescript"]
+        # Use provided language, user's languages, or defaults
+        if language:
+            search_languages = [language]
+        elif user_languages:
+            search_languages = user_languages
+        else:
+            search_languages = ["python", "javascript", "typescript"]
         
-        logger.info(f"User languages: {user_languages}")
-        
-        # Step 2: Search repos matching user's languages
-        all_ranked = []
+        recommendations = []
         async with httpx.AsyncClient(timeout=30) as client:
-            for lang in user_languages[:2]:
-                try:
-                    r = await client.get(
-                        "https://api.github.com/search/repositories",
-                        headers=self.headers,
-                        params={"q": f"language:{lang} good-first-issues:>3 stars:>100", "sort": "stars", "per_page": 3}
-                    )
-                    if r.status_code != 200: continue
-                    repos = r.json().get("items", [])
-                    
-                    for repo in repos:
-                        owner = repo["owner"]["login"]
-                        repo_name = repo["name"]
-                        
-                        issues_r = await client.get(
-                            f"https://api.github.com/repos/{owner}/{repo_name}/issues",
-                            headers=self.headers,
-                            params={"labels": "good first issue", "state": "open", "per_page": 2}
-                        )
-                        if issues_r.status_code != 200: continue
-                        
-                        for issue in issues_r.json():
-                            if "pull_request" in issue: continue
-                            labels = [l["name"] for l in issue.get("labels", [])]
-                            issue_data = {"title": issue.get("title", ""), "body": issue.get("body", ""), "labels": labels, "comments": issue.get("comments", 0), "assignees": issue.get("assignees", [])}
-                            repo_info = {"full_name": f"{owner}/{repo_name}", "stars": repo.get("stargazers_count", 0), "pushed_at": repo.get("pushed_at")}
-                            scoring = issue_scorer.score(issue_data, repo_info)
-                            
-                            # Boost score for matching user's primary language
-                            lang_bonus = 10 if repo.get("language") == user_languages[0] else 5
-                            
-                            all_ranked.append({
-                                "issue_number": issue["number"], "title": issue["title"], "repo": f"{owner}/{repo_name}",
-                                "repo_stars": repo.get("stargazers_count", 0), "labels": labels,
-                                "overall_score": min(scoring["overall_score"] + lang_bonus, 100),
-                                "difficulty_score": scoring["factors"]["difficulty"]["score"],
-                                "merge_chance": scoring["factors"]["merge_probability"]["score"],
-                                "beginner_score": scoring["factors"]["beginner_friendly"]["score"],
-                                "repo_health": scoring["factors"]["repo_activity"]["score"],
-                                "url": issue["html_url"], "verdict": scoring["verdict"],
-                                "estimated_hours": "1-2h" if scoring["factors"]["time_estimate"]["score"] >= 80 else "2-4h",
-                                "reason": scoring["factors"]["difficulty"]["reason"]
-                            })
-                except Exception as e:
-                    logger.error(f"Error processing language {lang}: {e}")
+            for repo_full_name, default_labels in DEFAULT_REPOS[:8]:
+                if len(recommendations) >= limit:
+                    break
+                
+                owner, repo = repo_full_name.split("/")
+                
+                # Get issues
+                r = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo}/issues",
+                    params={
+                        "state": "open",
+                        "labels": ",".join(default_labels),
+                        "sort": "updated",
+                        "per_page": 3
+                    },
+                    headers=headers
+                )
+                
+                if r.status_code != 200:
                     continue
+                
+                issues = r.json()
+                
+                for issue in issues:
+                    if "pull_request" in issue:
+                        continue
+                    if len(recommendations) >= limit:
+                        break
+                    
+                    # Get repo info for health score
+                    repo_r = await client.get(
+                        f"https://api.github.com/repos/{owner}/{repo}",
+                        headers=headers
+                    )
+                    repo_data = repo_r.json() if repo_r.status_code == 200 else {}
+                    health = HealthScorer.calculate(repo_data)
+                    
+                    issue_labels = [l["name"] for l in issue.get("labels", [])]
+                    
+                    recommendations.append({
+                        "issue_number": issue["number"],
+                        "title": issue["title"],
+                        "repo": repo_full_name,
+                        "repo_stars": repo_data.get("stargazers_count", 0),
+                        "labels": issue_labels,
+                        "overall_score": health.get("overall", 75),
+                        "difficulty_score": 80 if "good first issue" in [l.lower() for l in issue_labels] else 60,
+                        "merge_chance": 85 if "good first issue" in [l.lower() for l in issue_labels] else 70,
+                        "beginner_score": 90 if "good first issue" in [l.lower() for l in issue_labels] else 50,
+                        "repo_health": health.get("overall", 75),
+                        "url": issue["html_url"],
+                        "verdict": "Highly Recommended" if health.get("overall", 0) >= 80 else "Recommended",
+                        "estimated_hours": "1-2h" if "good first issue" in [l.lower() for l in issue_labels] else "2-4h",
+                        "reason": ai_service.generate_recommendation_reason(
+                            issue["title"],
+                            repo_full_name,
+                            health.get("overall", 75),
+                            "Easy" if "good first issue" in [l.lower() for l in issue_labels] else "Medium",
+                            issue_labels
+                        )
+                    })
         
-        all_ranked.sort(key=lambda x: x["overall_score"], reverse=True)
-        result = all_ranked[:limit]
-        logger.info(f"Returning {len(result)} personalized recommendations")
-        return result
-
-recommendation_engine = RecommendationEngine()
+        return recommendations

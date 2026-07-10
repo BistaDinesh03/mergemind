@@ -193,7 +193,7 @@ function LoadingScreen() {
   )
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const { step } = useOnboarding()
   const [showLoading, setShowLoading] = useState(false)
 
@@ -223,5 +223,13 @@ export default function OnboardingPage() {
         {step === 3 && <Step3Interests />}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <OnboardingProvider>
+      <OnboardingContent />
+    </OnboardingProvider>
   )
 }
