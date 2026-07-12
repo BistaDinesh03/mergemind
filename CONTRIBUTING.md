@@ -1,5 +1,52 @@
-# Contributing to MergeMind
+\# Contributing to MergeMind
 
+
+
+Thanks for your interest in contributing! MergeMind is an AI-powered platform that helps developers find their next open-source contribution.
+
+
+
+\## Quick Links
+
+
+
+\- \[Project Overview](01\_PROJECT\_OVERVIEW.md)
+
+\- \[Tech Stack](02\_TECH\_STACK.md)
+
+\- \[Quick Start](18\_QUICK\_START.md)
+
+\- \[API Docs](04\_API\_DOCUMENTATION.md)
+
+
+
+\## Development Setup
+
+
+
+\### Prerequisites
+
+
+
+\- Node.js 20+
+
+\- Python 3.11+
+
+\- Docker Desktop
+
+\- Git
+
+\- GitHub account
+
+
+
+\### Quick Start (Docker)
+
+
+
+```bash
+
+<<<<<<< Updated upstream
 Thanks for your interest in contributing — MergeMind helps developers find their next open-source contribution, and it's built the same way.
 
 ## Quick links
@@ -18,11 +65,16 @@ Thanks for your interest in contributing — MergeMind helps developers find the
 **Quick start (Docker):**
 
 ```bash
+=======
+>>>>>>> Stashed changes
 git clone https://github.com/BistaDinesh03/mergemind.git
+
 cd mergemind
+
 docker compose up -d
 ```
 
+<<<<<<< Updated upstream
 - Frontend: `http://127.0.0.1:3000`
 - Backend: `http://127.0.0.1:8000`
 - API docs: `http://127.0.0.1:8000/docs`
@@ -172,3 +224,5 @@ This project follows the [Contributor Covenant](https://www.contributor-covenant
 ## Questions?
 
 Open an issue on GitHub, check the `docs/` folder, or review the [API Documentation](04_API_DOCUMENTATION.md) for endpoint details.
+=======
+>>>>>>> Stashed changes
