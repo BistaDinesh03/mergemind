@@ -1,4 +1,4 @@
-FROM python:3.11-alpine AS builder
+FROM python:3.14-alpine AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN apk add --no-cache gcc musl-dev libffi-dev
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/build -r requirements.txt
 
-FROM python:3.11-alpine
+FROM python:3.14-alpine
 
 # Create non-root user
 RUN addgroup -S mergemind && adduser -S mergemind -G mergemind
