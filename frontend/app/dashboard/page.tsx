@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw, Loader2 } from "lucide-react"
 
-const API = "http://localhost:8000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface Stats {
   repos: number
