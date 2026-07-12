@@ -1,5 +1,5 @@
 # ─── Builder Stage ─────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # ─── Production Stage ──────────────────────────
-FROM node:20-alpine
+FROM node:26-alpine
 
 RUN addgroup -S mergemind && adduser -S mergemind -G mergemind
 
