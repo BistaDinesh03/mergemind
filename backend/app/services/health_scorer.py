@@ -27,7 +27,8 @@ class HealthScorer:
                 elif days < 7: activity_score += 15
                 elif days < 30: activity_score += 10
                 elif days > 365: activity_score -= 20
-            except: pass
+            except (ValueError, TypeError):
+                pass
         if archived: activity_score -= 30
         activity_score = max(0, min(100, activity_score))
 
@@ -66,13 +67,13 @@ class HealthScorer:
             "overall": overall,
             "status": status,
             "categories": {
-                "activity": {"score": activity_score, "label": "Activity", "icon": "activity", "reasons": self._reasons_activity(stars, pushed_at, archived)},
-                "documentation": {"score": doc_score, "label": "Documentation", "icon": "documentation", "reasons": self._reasons_docs(description, has_wiki, license_info)},
-                "community": {"score": community_score, "label": "Community", "icon": "community", "reasons": self._reasons_community(stars, forks, has_discussions)},
-                "maintenance": {"score": maintenance_score, "label": "Maintenance", "icon": "maintenance", "reasons": self._reasons_maintenance(open_issues, archived)},
+                "activity": {"score": activity_score, "label": "Activity", "icon": "activity", "reasons": HealthScorer._reasons_activity(stars, pushed_at, archived)},
+                "documentation": {"score": doc_score, "label": "Documentation", "icon": "documentation", "reasons": HealthScorer._reasons_docs(description, has_wiki, license_info)},
+                "community": {"score": community_score, "label": "Community", "icon": "community", "reasons": HealthScorer._reasons_community(stars, forks, has_discussions)},
+                "maintenance": {"score": maintenance_score, "label": "Maintenance", "icon": "maintenance", "reasons": HealthScorer._reasons_maintenance(open_issues, archived)},
             },
-            "summary": self._summary(activity_score, doc_score, community_score, maintenance_score),
-            "recommendations": self._recommendations(activity_score, doc_score, community_score, maintenance_score),
+            "summary": HealthScorer._summary(activity_score, doc_score, community_score, maintenance_score),
+            "recommendations": HealthScorer._recommendations(activity_score, doc_score, community_score, maintenance_score),
         }
 
     @staticmethod

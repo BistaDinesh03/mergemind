@@ -1,40 +1,40 @@
-"""Portfolio service — fetches real GitHub user data."""
-import httpx
+"""Portfolio service — fetches real GitHub user data with pagination."""
 from fastapi import HTTPException
-from ..config import settings
+from .github_client import github_client
 
 
 class PortfolioService:
     
-    async def get_portfolio(self, username: str) -> dict | None:
+    async def get_portfolio(
+        self,
+        username: str,
+        page: int = 1,
+        per_page: int = 30
+    ) -> dict | None:
         """Fetch portfolio for a GitHub user. Returns None if not found."""
-        headers = {
-            "Authorization": f"Bearer {settings.github_token}",
-            "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "MergeMind"
-        }
+        username = username.strip().strip("/")
         
-        async with httpx.AsyncClient(timeout=30) as client:
-            # Get user profile
-            r = await client.get(
-                f"https://api.github.com/users/{username}",
-                headers=headers
-            )
-            
-            if r.status_code == 404:
-                return None
-            if r.status_code != 200:
-                raise HTTPException(status_code=502, detail="GitHub API unavailable")
-            
-            data = r.json()
-            
-            # Get repositories
-            repos_r = await client.get(
-                f"https://api.github.com/users/{username}/repos",
-                params={"sort": "updated", "per_page": 30, "type": "owner"},
-                headers=headers
-            )
-            repos = repos_r.json() if repos_r.status_code == 200 else []
+        # Get user profile
+        data = await github_client.request(
+            f"https://api.github.com/users/{username}"
+        )
+        
+        if data is None:
+            return None
+        
+        total_repos = data.get("public_repos", 0)
+        total_pages = max(1, (total_repos + per_page - 1) // per_page)
+        
+        # Get repositories with pagination
+        repos = await github_client.request(
+            f"https://api.github.com/users/{username}/repos",
+            params={
+                "sort": "updated",
+                "per_page": per_page,
+                "page": page,
+                "type": "owner"
+            }
+        )
         
         return {
             "username": username,
@@ -43,7 +43,10 @@ class PortfolioService:
             "avatar": data.get("avatar_url"),
             "followers": data.get("followers", 0),
             "following": data.get("following", 0),
-            "public_repos": data.get("public_repos", 0),
+            "public_repos": total_repos,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
             "repositories": [
                 {
                     "name": r["full_name"],
@@ -54,6 +57,6 @@ class PortfolioService:
                     "url": r["html_url"],
                     "is_fork": r.get("fork", False)
                 }
-                for r in repos
+                for r in (repos or [])
             ]
         }
