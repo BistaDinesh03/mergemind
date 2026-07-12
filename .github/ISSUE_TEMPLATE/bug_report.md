@@ -14,8 +14,7 @@ A clear description of the bug.
 
 1. Go to '...'
 2. Click on '...'
-3. Scroll to '...'
-4. See error
+3. See error
 
 ## Expected Behavior
 
@@ -27,15 +26,14 @@ What actually happened.
 
 ## Screenshots
 
-If applicable, add screenshots.
+If applicable.
 
 ## Environment
 
-- Browser: [e.g. Chrome, Firefox]
-- Version: [e.g. 120]
-- OS: [e.g. Windows, macOS]
-- Device: [e.g. Desktop, Mobile]
+- Browser: [e.g. Chrome 120]
+- OS: [e.g. Windows 11]
+- Device: [e.g. Desktop]
 
 ## Additional Context
 
-Any other information about the problem.
+Any other information.
