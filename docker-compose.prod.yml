@@ -1,33 +1,79 @@
+version: "3.9"
+
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mergemind-backend
     ports:
       - "8000:8000"
     environment:
       - ENVIRONMENT=production
-      - LOG_LEVEL=INFO
+      - DEBUG=false
+      - LOG_LEVEL=WARNING
     env_file:
       - ./backend/.env
-    restart: unless-stopped
+    restart: always
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 15s
     deploy:
       resources:
         limits:
-          memory: 512M
+          cpus: "1.0"
+          memory: "512M"
+        reservations:
+          cpus: "0.5"
+          memory: "256M"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - mergemind_net
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mergemind-frontend
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com
-    restart: unless-stopped
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXTAUTH_URL=https://your-domain.com
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     deploy:
       resources:
         limits:
-          memory: 256M
+          cpus: "0.5"
+          memory: "256M"
+        reservations:
+          cpus: "0.25"
+          memory: "128M"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - mergemind_net
+
+networks:
+  mergemind_net:
+    driver: bridge

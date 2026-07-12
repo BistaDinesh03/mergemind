@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.coverage
+htmlcov
+.git
+.gitignore
+.env.local
+*.db
+venv/
+.venv/
+Dockerfile
+docker-compose*
+README.md
