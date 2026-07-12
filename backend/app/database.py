@@ -1,14 +1,16 @@
 """
-Database configuration — PostgreSQL-ready with SQLite fallback.
+Database configuration — PostgreSQL for production.
 Uses SQLAlchemy 2.0 patterns with async support prepared.
 """
+import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 from .config import settings
 
-# Use SQLite for development, PostgreSQL for production
-DATABASE_URL = settings.database_url or "sqlite:///./mergemind.db"
+# DATABASE_URL must be set in production (from Railway Postgres)
+# Development can use SQLite if DATABASE_URL is not provided
+DATABASE_URL = os.getenv("DATABASE_URL") or settings.database_url or "sqlite:///./mergemind.db"
 
 # SQLite-specific optimizations
 connect_args = {}
