@@ -1,32 +1,56 @@
-## Summary
-Describe what this pull request does and why.
+\## Description
 
-## Related Issue
-Closes #
 
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-- [ ] Refactor
-- [ ] Chore / tooling
 
-## Checklist
-- [ ] I have read the CONTRIBUTING.md guidelines
-- [ ] My code follows the project style conventions
-- [ ] I have added tests that prove my fix or feature works
-- [ ] Existing tests pass locally
-- [ ] I have updated documentation where relevant
+Brief description of changes.
 
-## Testing
-Describe how you tested these changes.
 
-## Screenshots
-Include screenshots for UI changes, if applicable.
 
-## Breaking Changes
-Describe any breaking changes, or write "None".
+\## Type of Change
 
-## Reviewer Notes
-Anything you would like reviewers to focus on.
+
+
+\- \[ ] Bug fix
+
+\- \[ ] New feature
+
+\- \[ ] Documentation update
+
+\- \[ ] Performance improvement
+
+\- \[ ] Security fix
+
+
+
+\## Testing
+
+
+
+\- \[ ] `npm run build` passes (frontend)
+
+\- \[ ] Tests pass (backend)
+
+\- \[ ] Manual testing completed
+
+
+
+\## Screenshots
+
+
+
+If UI changes, add screenshots.
+
+
+
+\## Checklist
+
+
+
+\- \[ ] My code follows the project's coding standards
+
+\- \[ ] I have updated documentation as needed
+
+\- \[ ] I have tested these changes locally
+
+\- \[ ] No new warnings or errors
+

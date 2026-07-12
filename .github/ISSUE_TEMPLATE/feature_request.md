@@ -1,28 +1,23 @@
 ---
-name: Feature request
+name: Feature Request
 about: Suggest an idea for MergeMind
-title: "[Feature]: "
+title: "[FEATURE] "
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 ## Problem
-What problem does this feature solve?
+
+What problem are you trying to solve?
 
 ## Proposed Solution
-Describe the feature you would like to see.
+
+Describe your proposed solution.
 
 ## Alternatives Considered
-List any alternative solutions or workarounds.
 
-## Use Case
-Describe how and when you would use this feature.
+Any alternative solutions you've thought about.
 
 ## Additional Context
-Add any other context, mockups, or references.
 
-## Priority
-- [ ] Critical — blocks core workflow
-- [ ] High — significantly improves experience
-- [ ] Medium — nice to have
-- [ ] Low — minor improvement
+Screenshots, mockups, or additional information.
