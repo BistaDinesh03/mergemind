@@ -4,7 +4,7 @@ import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
 import { Star, Users, GitFork, Layers, Github, AlertCircle, RefreshCw, Loader2, ExternalLink } from "lucide-react"
 
-const API = "http://localhost:8000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface Repo {
   name: string
