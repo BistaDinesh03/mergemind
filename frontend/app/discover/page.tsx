@@ -30,7 +30,7 @@ export default function DiscoverPage() {
       if (searchQuery) params.append("query", searchQuery)
       if (language) params.append("language", language)
       params.append("sort", sort)
-      
+
       const res = await fetch(`${API}/api/github/repositories?${params}`)
       if (!res.ok) throw new Error("Failed to fetch repositories")
       const data = await res.json()
@@ -64,7 +64,7 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="flex items-center gap-2 mb-8">
           <Compass className="w-5 h-5 text-purple-400" />
           <h1 className="text-2xl font-bold">Discover Repositories</h1>
@@ -85,8 +85,8 @@ export default function DiscoverPage() {
         </div>
 
         {loading && (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map((i) => (
               <RepoCardSkeleton key={i} />
             ))}
           </div>
@@ -104,7 +104,7 @@ export default function DiscoverPage() {
         )}
 
         {!loading && !error && repos.length > 0 && (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {repos.map((repo: any) => (
               <RepoCard key={repo.id} repo={repo} />
             ))}
