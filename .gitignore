@@ -1,19 +1,48 @@
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+.next/
+out/
+dist/
+build/
+
 # Python
 __pycache__/
 *.py[cod]
-*.db
-.env
+*$py.class
+*.so
 venv/
+.venv/
 env/
+*.egg-info/
+.eggs/
 
-# Node
-node_modules/
-.next/
-package-lock.json
+# Testing
+coverage/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE
-.vscode/
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
 
 # Docker
 .docker/
@@ -22,7 +51,5 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
-# Frontend env
-frontend/.env.local.env
-backend/.env
-frontend/.env.local
+# Vercel
+.vercel
