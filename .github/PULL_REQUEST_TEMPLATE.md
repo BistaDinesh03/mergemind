@@ -2,7 +2,7 @@
 
 
 
-Brief description of changes.
+What does this PR do?
 
 
 
@@ -14,11 +14,27 @@ Brief description of changes.
 
 \- \[ ] New feature
 
-\- \[ ] Documentation update
+\- \[ ] Documentation
 
-\- \[ ] Performance improvement
+\- \[ ] Performance
 
-\- \[ ] Security fix
+\- \[ ] Security
+
+
+
+\## Related Issue
+
+
+
+Fixes # (issue number)
+
+
+
+\## Screenshots
+
+
+
+If applicable.
 
 
 
@@ -28,17 +44,9 @@ Brief description of changes.
 
 \- \[ ] `npm run build` passes (frontend)
 
-\- \[ ] Tests pass (backend)
+\- \[ ] `python -m pytest` passes (backend)
 
 \- \[ ] Manual testing completed
-
-
-
-\## Screenshots
-
-
-
-If UI changes, add screenshots.
 
 
 
@@ -46,11 +54,11 @@ If UI changes, add screenshots.
 
 
 
-\- \[ ] My code follows the project's coding standards
+\- \[ ] Code follows project standards
 
-\- \[ ] I have updated documentation as needed
+\- \[ ] Documentation updated
 
-\- \[ ] I have tested these changes locally
+\- \[ ] Tested locally
 
 \- \[ ] No new warnings or errors
 

@@ -12,12 +12,12 @@ What problem are you trying to solve?
 
 ## Proposed Solution
 
-Describe your proposed solution.
+Describe your solution.
 
-## Alternatives Considered
+## Alternatives
 
-Any alternative solutions you've thought about.
+Any alternatives you've considered.
 
 ## Additional Context
 
-Screenshots, mockups, or additional information.
+Screenshots or mockups.
