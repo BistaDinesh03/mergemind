@@ -8,7 +8,12 @@ import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { Compass } from "lucide-react"
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+function getApiUrl() {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  }
+  return "http://localhost:8000"
+}
 
 export default function DiscoverPage() {
   const [repos, setRepos] = useState([])
@@ -26,7 +31,7 @@ export default function DiscoverPage() {
       if (language) params.append("language", language)
       params.append("sort", sort)
       
-      const res = await fetch(`${API}/api/github/repositories?${params}`)
+      const res = await fetch(`${getApiUrl()}/api/github/repositories?${params}`)
       if (!res.ok) throw new Error("Failed to fetch repositories")
       const data = await res.json()
       setRepos(data.repositories || [])
