@@ -1,9 +1,14 @@
 fastapi>=0.139.0
 uvicorn>=0.51.0
 sqlalchemy>=2.0.51
+<<<<<<< HEAD
 psycopg2-binary>=2.9.0
 pydantic>=2.13.4
 pydantic-settings>=2.14.2
 httpx>=0.24.0
 google-genai>=0.3.0
 python-dotenv>=1.0.0
+=======
+pydantic>=2.13.4
+pydantic-settings>=2.14.2
+>>>>>>> 0da796f (chore: sync requirements with dependabot updates)
