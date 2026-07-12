@@ -10,6 +10,5 @@ htmlcov
 *.db
 venv/
 .venv/
-Dockerfile
 docker-compose*
 README.md
