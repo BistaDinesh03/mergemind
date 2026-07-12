@@ -8,12 +8,7 @@ import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { Compass } from "lucide-react"
 
-function getApiUrl() {
-  if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-  }
-  return "http://localhost:8000"
-}
+const API = process.env.NEXT_PUBLIC_API_URL || ""
 
 export default function DiscoverPage() {
   const [repos, setRepos] = useState([])
@@ -23,6 +18,11 @@ export default function DiscoverPage() {
   const [sort, setSort] = useState("stars")
 
   const fetchRepos = useCallback(async (searchQuery = "") => {
+    if (!API) {
+      setError("API URL not configured")
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
     try {
@@ -31,7 +31,7 @@ export default function DiscoverPage() {
       if (language) params.append("language", language)
       params.append("sort", sort)
       
-      const res = await fetch(`${getApiUrl()}/api/github/repositories?${params}`)
+      const res = await fetch(`${API}/api/github/repositories?${params}`)
       if (!res.ok) throw new Error("Failed to fetch repositories")
       const data = await res.json()
       setRepos(data.repositories || [])
@@ -48,6 +48,17 @@ export default function DiscoverPage() {
 
   const handleSearch = (query: string) => {
     fetchRepos(query)
+  }
+
+  if (!API) {
+    return (
+      <div className="min-h-screen bg-[#09090b] text-white">
+        <Navbar />
+        <div className="flex items-center justify-center py-32">
+          <p className="text-zinc-400">API configuration missing. Set NEXT_PUBLIC_API_URL.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
