@@ -8,7 +8,7 @@ import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { Compass } from "lucide-react"
 
-const API = "http://localhost:8000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export default function DiscoverPage() {
   const [repos, setRepos] = useState([])
