@@ -12,3 +12,15 @@ venv/
 .venv/
 docker-compose*
 README.md
+frontend/
+docs/
+.github/
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+SUPPORT.md
+ROADMAP.md
+ARCHITECTURE.md
+DEPLOYMENT.md
