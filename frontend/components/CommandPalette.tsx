@@ -2,80 +2,81 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Star, GitFork, Clock, TrendingUp, X, ArrowRight, Sparkles } from "lucide-react"
-import Link from "next/link"
+import { Search, Star, Clock, X, ArrowRight, Sparkles, Loader2 } from "lucide-react"
+
+const API = process.env.NEXT_PUBLIC_API_URL || ""
 
 interface RepoResult {
+  id: number
   full_name: string
   description: string
   stars: number
   language: string
-  updated_at: string
 }
-
-const POPULAR_REPOS: RepoResult[] = [
-  { full_name: "fastapi/fastapi", description: "FastAPI framework, high performance", stars: 99600, language: "Python", updated_at: "2026-07-03" },
-  { full_name: "vercel/next.js", description: "The React Framework for the Web", stars: 140300, language: "JavaScript", updated_at: "2026-07-02" },
-  { full_name: "microsoft/vscode", description: "Visual Studio Code", stars: 187000, language: "TypeScript", updated_at: "2026-07-03" },
-  { full_name: "pallets/flask", description: "Python micro framework", stars: 69000, language: "Python", updated_at: "2026-06-28" },
-  { full_name: "rust-lang/rust", description: "Reliable and efficient software", stars: 102000, language: "Rust", updated_at: "2026-07-03" },
-  { full_name: "golang/go", description: "The Go programming language", stars: 129000, language: "Go", updated_at: "2026-07-02" },
-  { full_name: "facebook/react", description: "Library for web UIs", stars: 225000, language: "JavaScript", updated_at: "2026-07-03" },
-  { full_name: "tiangolo/sqlmodel", description: "SQL databases in Python", stars: 15000, language: "Python", updated_at: "2026-06-15" },
-]
 
 export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<RepoResult[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
-  // Load recent searches from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("recentSearches")
     if (stored) setRecentSearches(JSON.parse(stored))
   }, [])
 
-  // Focus input on open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50)
       setQuery("")
       setSelectedIndex(0)
+      setResults([])
+      setError("")
     }
   }, [isOpen])
 
-  // Search logic with debounce
+  // Real API search with debounce
   useEffect(() => {
-    if (!query.trim()) {
+    if (!query.trim() || !API) {
       setResults([])
+      setError("")
       return
     }
-    const timer = setTimeout(() => {
-      const q = query.toLowerCase()
-      const filtered = POPULAR_REPOS.filter(r =>
-        r.full_name.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.language.toLowerCase().includes(q)
-      )
-      setResults(filtered)
-      setSelectedIndex(0)
-    }, 100)
-    return () => clearTimeout(timer)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await fetch(`${API}/api/github/repositories?query=${encodeURIComponent(query)}&per_page=8`)
+        if (!res.ok) throw new Error("Search failed")
+        const data = await res.json()
+        setResults(data.repositories || [])
+      } catch {
+        setError("Search unavailable")
+        setResults([])
+      } finally {
+        setLoading(false)
+      }
+    }, 250)
+
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [query])
 
-  // Save to recent searches
   const saveRecent = (term: string) => {
     const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5)
     setRecentSearches(updated)
     localStorage.setItem("recentSearches", JSON.stringify(updated))
   }
 
-  // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const items = query ? results : POPULAR_REPOS
+    const items = results
     if (e.key === "ArrowDown") {
       e.preventDefault()
       setSelectedIndex(prev => Math.min(prev + 1, items.length - 1))
@@ -93,36 +94,22 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
     } else if (e.key === "Escape") {
       onClose()
     }
-  }, [query, results, selectedIndex, router, onClose])
-
-  // Global Cmd+K listener
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault()
-        isOpen ? onClose() : onClose() // Toggle handled by parent
-      }
-    }
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
-  }, [isOpen, onClose])
+  }, [results, selectedIndex, router, onClose])
 
   if (!isOpen) return null
 
-  const displayItems = query ? results : POPULAR_REPOS
-  const showRecent = !query && recentSearches.length > 0
-
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      {/* Palette */}
-      <div className="relative w-full max-w-xl bg-[#18181b] border border-[#27272a] rounded-[20px] shadow-2xl shadow-black/50 overflow-hidden animate-scaleIn">
+      <div className="relative w-full max-w-xl bg-[#18181b] border border-[#27272a] rounded-[20px] shadow-2xl overflow-hidden">
         
-        {/* Search Input */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-[#27272a]">
-          <Search className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+          {loading ? (
+            <Loader2 className="w-5 h-5 text-purple-400 animate-spin flex-shrink-0" />
+          ) : (
+            <Search className="w-5 h-5 text-zinc-500 flex-shrink-0" />
+          )}
           <input
             ref={inputRef}
             value={query}
@@ -131,79 +118,58 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
             placeholder="Search repositories..."
             className="flex-1 bg-transparent text-white text-lg placeholder-zinc-500 outline-none"
           />
-          <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-[10px] text-zinc-500 bg-[#27272a] rounded-md font-mono">
-            <span>⌘</span>K
-          </kbd>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-[10px] text-zinc-500 bg-[#27272a] rounded-md font-mono">⌘K</kbd>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
-        {/* Content */}
         <div className="max-h-80 overflow-y-auto">
-          
-          {/* Recent Searches */}
-          {showRecent && (
+          {!query && recentSearches.length > 0 && (
             <div className="px-3 py-3">
               <p className="px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Recent</p>
               {recentSearches.map((term, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setQuery(term); saveRecent(term) }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm text-zinc-400 hover:text-white hover:bg-[#27272a]/50 transition-all duration-150 text-left"
-                >
-                  <Clock className="w-4 h-4 text-zinc-600" />
-                  {term}
+                <button key={i} onClick={() => setQuery(term)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[12px] text-sm text-zinc-400 hover:text-white hover:bg-[#27272a]/50 text-left">
+                  <Clock className="w-4 h-4 text-zinc-600" />{term}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Section Label */}
-          <div className="px-3 py-2">
-            <p className="px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider font-medium">
-              {query ? `Results (${results.length})` : "Popular Repositories"}
-            </p>
-          </div>
-
-          {/* Results / Popular */}
-          {displayItems.length === 0 ? (
+          {query && !loading && !error && results.length === 0 && (
             <div className="px-6 py-10 text-center">
               <Search className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
               <p className="text-sm text-zinc-500">No repositories found</p>
-              <p className="text-xs text-zinc-600 mt-1">Try a different search term</p>
             </div>
-          ) : (
+          )}
+
+          {error && (
+            <div className="px-6 py-10 text-center">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+
+          {results.length > 0 && (
             <div className="px-3 pb-3 space-y-1">
-              {displayItems.map((repo, i) => {
+              <p className="px-3 py-1.5 text-[10px] text-zinc-500 uppercase tracking-wider font-medium">Results ({results.length})</p>
+              {results.map((repo, i) => {
                 const isSelected = i === selectedIndex
                 return (
                   <button
-                    key={repo.full_name}
-                    onClick={() => {
-                      saveRecent(repo.full_name)
-                      router.push(`/repo/${repo.full_name}`)
-                      onClose()
-                    }}
-                    className={`w-full flex items-center gap-4 px-3 py-3 rounded-[12px] text-left transition-all duration-100 ${
+                    key={repo.id}
+                    onClick={() => { saveRecent(repo.full_name); router.push(`/repo/${repo.full_name}`); onClose() }}
+                    className={`w-full flex items-center gap-4 px-3 py-3 rounded-[12px] text-left transition-all ${
                       isSelected ? "bg-purple-500/10 border border-purple-500/20" : "hover:bg-[#27272a]/30"
                     }`}
                   >
-                    {/* Avatar placeholder */}
                     <div className="w-8 h-8 rounded-full bg-[#27272a] flex items-center justify-center flex-shrink-0">
                       <span className="text-xs text-zinc-400 font-bold">{repo.full_name?.[0]?.toUpperCase() || "?"}</span>
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium truncate">{repo.full_name}</span>
-                        {repo.stars > 100000 && (
-                          <Sparkles className="w-3 h-3 text-yellow-400 flex-shrink-0" />
-                        )}
+                        {repo.stars > 100000 && <Sparkles className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
                       </div>
-                      <p className="text-xs text-zinc-500 truncate mt-0.5">{repo.description}</p>
+                      <p className="text-xs text-zinc-500 truncate mt-0.5">{repo.description || "No description"}</p>
                     </div>
-
                     <div className="flex items-center gap-3 text-xs text-zinc-600 flex-shrink-0">
                       <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" />{(repo.stars / 1000).toFixed(0)}k</span>
                       <span>{repo.language}</span>
@@ -216,11 +182,8 @@ export function CommandPalette({ isOpen, onClose }: { isOpen: boolean; onClose: 
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center gap-4 px-5 py-3 border-t border-[#27272a] text-[10px] text-zinc-600">
-          <span>↑↓ Navigate</span>
-          <span>↵ Open</span>
-          <span>Esc Close</span>
+          <span>↑↓ Navigate</span><span>↵ Open</span><span>Esc Close</span>
         </div>
       </div>
     </div>

@@ -18,6 +18,7 @@ export default function DiscoverPage() {
   const [language, setLanguage] = useState("")
   const [sort, setSort] = useState("stars")
   const abortRef = useRef<AbortController | null>(null)
+  const initialFetchDone = useRef(false)
 
   const fetchRepos = useCallback(async (searchQuery = "") => {
     if (!API) {
@@ -26,7 +27,6 @@ export default function DiscoverPage() {
       return
     }
     
-    // Cancel previous request
     if (abortRef.current) {
       abortRef.current.abort()
     }
@@ -61,7 +61,10 @@ export default function DiscoverPage() {
   }, [language, sort])
 
   useEffect(() => {
-    fetchRepos()
+    if (!initialFetchDone.current) {
+      initialFetchDone.current = true
+      fetchRepos()
+    }
     return () => {
       if (abortRef.current) abortRef.current.abort()
     }
@@ -85,7 +88,7 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-6 py-12">
+      <main className="max-w-6xl mx-auto px-6 py-12 animate-fadeIn">
         <div className="flex items-center gap-2 mb-8">
           <Compass className="w-5 h-5 text-purple-400" />
           <h1 className="text-2xl font-bold">Discover Repositories</h1>
