@@ -3,7 +3,8 @@ import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
-import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw, Loader2 } from "lucide-react"
+import { DashboardSkeleton } from "@/components/Skeletons"
+import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -31,6 +32,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const username = session?.user?.name || null
+
+  const isLoading = status === "loading" || loading
 
   useEffect(() => {
     if (status === "loading") return
@@ -86,12 +89,10 @@ export default function DashboardPage() {
     return "/repo/" + parts[0] + "/" + parts[1] + "/issues/" + (issue.issue_number || "1")
   }
 
-  if (status === "loading" || loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
-        <div className="max-w-2xl mx-auto px-6 py-16 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-        </div>
+        <DashboardSkeleton />
       </div>
     )
   }
@@ -127,7 +128,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
-      <main className="max-w-2xl mx-auto px-6 py-12 space-y-10">
+      <main className="max-w-2xl mx-auto px-6 py-12 space-y-10 animate-fadeIn">
         {stats && (
           <div className="flex items-center gap-3">
             {stats.avatar ? (
