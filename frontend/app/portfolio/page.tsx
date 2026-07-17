@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
-import { Star, Users, GitFork, Layers, Github, AlertCircle, RefreshCw, Loader2, ExternalLink } from "lucide-react"
+import { PortfolioSkeleton } from "@/components/Skeletons"
+import { Star, Users, GitFork, Layers, Github, AlertCircle, RefreshCw, ExternalLink } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -56,8 +57,8 @@ export default function PortfolioPage() {
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
-        <div className="max-w-5xl mx-auto px-6 py-12 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <PortfolioSkeleton />
         </div>
       </div>
     )
@@ -107,7 +108,7 @@ export default function PortfolioPage() {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
-      <main className="max-w-5xl mx-auto px-6 py-12 space-y-10">
+      <main className="max-w-5xl mx-auto px-6 py-12 space-y-10 animate-fadeIn">
         <div className="flex items-start gap-6 pb-8 border-b border-[#27272a]">
           {data.avatar ? (
             <img src={data.avatar} alt="" className="w-20 h-20 rounded-full ring-2 ring-[#27272a]" />
