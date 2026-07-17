@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Navbar } from "@/components/Navbar"
 import { SearchBar } from "@/components/SearchBar"
 import { LanguageFilter } from "@/components/LanguageFilter"
@@ -13,9 +13,11 @@ const API = process.env.NEXT_PUBLIC_API_URL || ""
 export default function DiscoverPage() {
   const [repos, setRepos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState("")
   const [sort, setSort] = useState("stars")
+  const abortRef = useRef<AbortController | null>(null)
 
   const fetchRepos = useCallback(async (searchQuery = "") => {
     if (!API) {
@@ -23,27 +25,46 @@ export default function DiscoverPage() {
       setLoading(false)
       return
     }
-    setLoading(true)
+    
+    // Cancel previous request
+    if (abortRef.current) {
+      abortRef.current.abort()
+    }
+    abortRef.current = new AbortController()
+    
+    if (searchQuery) {
+      setSearchLoading(true)
+    } else {
+      setLoading(true)
+    }
     setError(null)
+    
     try {
       const params = new URLSearchParams()
       if (searchQuery) params.append("query", searchQuery)
       if (language) params.append("language", language)
       params.append("sort", sort)
 
-      const res = await fetch(`${API}/api/github/repositories?${params}`)
+      const res = await fetch(`${API}/api/github/repositories?${params}`, {
+        signal: abortRef.current.signal
+      })
       if (!res.ok) throw new Error("Failed to fetch repositories")
       const data = await res.json()
       setRepos(data.repositories || [])
     } catch (err: any) {
+      if (err.name === "AbortError") return
       setError(err.message)
     } finally {
       setLoading(false)
+      setSearchLoading(false)
     }
   }, [language, sort])
 
   useEffect(() => {
     fetchRepos()
+    return () => {
+      if (abortRef.current) abortRef.current.abort()
+    }
   }, [fetchRepos])
 
   const handleSearch = (query: string) => {
@@ -71,7 +92,7 @@ export default function DiscoverPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar onSearch={handleSearch} loading={searchLoading} />
           <LanguageFilter selected={language} onSelect={setLanguage} />
           <select
             value={sort}
