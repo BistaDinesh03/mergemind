@@ -4,6 +4,7 @@ import { useSession, signIn } from "next-auth/react"
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { DashboardSkeleton } from "@/components/Skeletons"
+import { EmptyState } from "@/components/EmptyState"
 import { Sparkles, ArrowRight, Thermometer, Clock, GitMerge, Award, Github, AlertCircle, RefreshCw } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -172,12 +173,12 @@ export default function DashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8 text-center">
-            <Sparkles className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
-            <p className="text-sm text-zinc-500">No recommendations yet. Try discovering repositories first.</p>
-            <Link href="/discover" className="mt-4 h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
-              Discover Repos <ArrowRight className="w-4 h-4" />
-            </Link>
+          <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
+            <EmptyState 
+              type="recommendations"
+              action={{ label: "Discover Repos", href: "/discover" }}
+              secondaryAction={{ label: "View Portfolio", href: "/portfolio" }}
+            />
           </div>
         )}
       </main>

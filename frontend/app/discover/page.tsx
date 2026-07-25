@@ -6,6 +6,7 @@ import { LanguageFilter } from "@/components/LanguageFilter"
 import { RepoCard } from "@/components/RepoCard"
 import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
+import { EmptyState } from "@/components/EmptyState"
 import { Compass } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || ""
@@ -121,10 +122,11 @@ export default function DiscoverPage() {
         )}
 
         {!loading && !error && repos.length === 0 && (
-          <div className="text-center py-16">
-            <Compass className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
-            <p className="text-sm text-zinc-500">No repositories found. Try different search terms.</p>
-          </div>
+          <EmptyState 
+            type="discover" 
+            action={{ label: "Clear Filters", onClick: () => { setLanguage(""); fetchRepos() } }}
+            secondaryAction={{ label: "Browse Popular", href: "/discover" }}
+          />
         )}
 
         {!loading && !error && repos.length > 0 && (
