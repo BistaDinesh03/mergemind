@@ -175,7 +175,7 @@ export default function DashboardPage() {
         ) : (
           <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
             <EmptyState 
-              type="recommendations"
+              kind="recommendations"
               action={{ label: "Discover Repos", href: "/discover" }}
               secondaryAction={{ label: "View Portfolio", href: "/portfolio" }}
             />

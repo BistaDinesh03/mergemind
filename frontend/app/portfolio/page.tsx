@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
@@ -179,7 +179,7 @@ export default function PortfolioPage() {
           ) : (
             <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-8">
               <EmptyState 
-                type="portfolio"
+                kind="portfolio"
                 action={{ label: "Find Issues", href: "/discover" }}
               />
             </div>
