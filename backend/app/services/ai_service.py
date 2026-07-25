@@ -1,9 +1,8 @@
 """
 Unified AI Service — Google Gemini 2.5 Flash.
-Validates API key on startup, caches responses, never hallucinates data.
+Evidence-based summaries only. Never hallucinates.
 """
 import hashlib
-import json
 import logging
 import time
 from typing import Optional
@@ -13,19 +12,11 @@ from ..config import settings
 
 logger = logging.getLogger("mergemind.ai")
 
-# Cache configuration
-CACHE_TTL = 600  # 10 minutes
+CACHE_TTL = 600
 
 
 class AIService:
-    """
-    Gemini AI service with validation, caching, and safe outputs.
-    
-    Rules:
-    - Never invent GitHub statistics
-    - Only explain data that was provided
-    - Return empty string on failure, never fake data
-    """
+    """AI service that summarizes data — never invents it."""
     
     def __init__(self):
         self.client = None
@@ -34,7 +25,6 @@ class AIService:
         self._cache: dict = {}
         self._cache_times: dict = {}
         
-        # Validate API key on startup
         if not settings.gemini_api_key:
             logger.warning("GEMINI_API_KEY not set — AI features disabled")
             return
@@ -47,12 +37,10 @@ class AIService:
             logger.error(f"Gemini init failed: {e}")
     
     def _cache_key(self, prompt: str, max_tokens: int) -> str:
-        """Generate cache key from prompt hash."""
         raw = f"{prompt}:{max_tokens}:{self.model}"
         return hashlib.sha256(raw.encode()).hexdigest()
     
     def _cache_get(self, key: str) -> Optional[str]:
-        """Get cached response if not expired."""
         if key in self._cache:
             if time.time() - self._cache_times.get(key, 0) < CACHE_TTL:
                 return self._cache[key]
@@ -61,33 +49,22 @@ class AIService:
         return None
     
     def _cache_set(self, key: str, value: str):
-        """Store response in cache with timestamp."""
-        # Prevent cache from growing too large
         if len(self._cache) > 500:
             oldest = min(self._cache_times, key=lambda k: self._cache_times[k])
             del self._cache[oldest]
             del self._cache_times[oldest]
-        
         self._cache[key] = value
         self._cache_times[key] = time.time()
     
     def _generate(self, prompt: str, max_tokens: int = 300, retry: bool = True) -> str:
-        """
-        Generate AI response with retry, timeout, and validation.
-        
-        Returns empty string on any failure — never fake data.
-        """
         if not self.enabled:
             return ""
         
-        # Check cache
         cache_key = self._cache_key(prompt, max_tokens)
         cached = self._cache_get(cache_key)
         if cached is not None:
-            logger.debug("AI cache hit")
             return cached
         
-        # Try up to 2 times
         for attempt in range(2):
             try:
                 response = self.client.models.generate_content(
@@ -95,126 +72,100 @@ class AIService:
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         max_output_tokens=max_tokens,
-                        temperature=0.4,
-                        top_p=0.95,
+                        temperature=0.2,
+                        top_p=0.9,
                     ),
                 )
                 
                 text = response.text.strip() if response.text else ""
                 
-                # Validate output — reject hallucinated statistics
                 if text and not self._is_hallucinated(text):
                     self._cache_set(cache_key, text)
                     return text
-                
-                if not retry:
-                    return ""
                     
             except Exception as e:
                 logger.error(f"Gemini attempt {attempt+1} failed: {str(e)[:100]}")
                 if attempt == 0 and retry:
-                    time.sleep(1)  # Wait before retry
+                    time.sleep(1)
                 else:
                     return ""
         
         return ""
     
     def _is_hallucinated(self, text: str) -> bool:
-        """
-        Check if AI response contains likely hallucinated data.
-        Rejects responses with made-up statistics or fake repo names.
-        """
-        hallucination_markers = [
+        markers = [
             "I don't have access to",
             "I cannot access",
             "I am unable to",
             "As an AI",
             "I can't",
+            "I do not have",
+            "I'm not able",
         ]
-        
-        for marker in hallucination_markers:
+        for marker in markers:
             if marker.lower() in text.lower():
                 return True
-        
         return False
     
-    # ─── PUBLIC METHODS ────────────────────────────────
-    
-    def generate_repository_summary(
-        self,
-        full_name: str,
-        stars: int,
-        language: str,
-        description: str,
-        topics: list = None
-    ) -> str:
-        """
-        Summarize a GitHub repository using ONLY provided data.
-        Never invents statistics.
-        """
-        topic_str = ", ".join(topics) if topics else "none listed"
+    def generate_repository_summary(self, full_name: str, stars: int, language: str, description: str, topics: list = None) -> str:
+        facts = []
+        facts.append(f"{full_name} is a {language or 'code'} repository")
+        facts.append(f"{stars:,} stars")
+        if description:
+            facts.append(description[:150])
         
-        prompt = f"""Summarize this GitHub repository in exactly 2 sentences. Use ONLY the data provided below. Do NOT invent any statistics.
+        evidence = " | ".join(facts)
+        
+        if not self.enabled:
+            return evidence
+        
+        topic_str = ", ".join(topics) if topics else "none"
+        
+        prompt = f"""Summarize this repository using ONLY the data provided. Do not add opinions, praise, or speculation.
+Stick to observable facts from the data below. Never say "well-documented" unless docs are confirmed.
+Never say "active community" unless activity data proves it.
 
-Repository: {full_name}
-Stars: {stars:,}
-Language: {language}
-Topics: {topic_str}
-Description: {description[:300]}
+Data:
+- Repository: {full_name}
+- Stars: {stars:,}
+- Language: {language}
+- Topics: {topic_str}
+- Description: {description[:300]}
 
-Focus on: what makes this project good for contributors."""
+Write exactly 2 factual sentences. No filler words like "great", "excellent", "amazing"."""
         
         result = self._generate(prompt, max_tokens=200)
-        return result if result else f"{full_name} is a {language} repository with {stars:,} stars. {description[:100]}"
+        return result if result else evidence
     
-    def generate_ai_mentor(
-        self,
-        title: str,
-        repo: str,
-        difficulty: str,
-        merge_chance: int,
-        health_score: int,
-        labels: list = None
-    ) -> str:
-        """
-        Give warm, encouraging mentor advice based on real issue data.
-        """
+    def generate_ai_mentor(self, title: str, repo: str, difficulty: str, merge_chance: int, health_score: int, labels: list = None) -> str:
         label_str = ", ".join(labels) if labels else "none"
         
-        prompt = f"""You are an AI mentor. Give warm, encouraging advice in exactly 2 sentences. Use ONLY the data provided.
+        if not self.enabled:
+            return f"Issue in {repo}: '{title}'. Difficulty: {difficulty}. Labels: {label_str}. Repository health: {health_score}/100."
+        
+        prompt = f"""Give ONE specific, actionable tip for this GitHub issue. Base it on the data provided.
+Do NOT say "this is a great opportunity" or give generic encouragement.
+Focus on what the contributor should actually DO.
 
 Issue: {title}
 Repository: {repo}
 Difficulty: {difficulty}
-Merge probability: {merge_chance}%
-Repository health: {health_score}/100
 Labels: {label_str}
 
-Be specific and actionable. Do NOT invent statistics."""
+Example good response: "Start by reading the CONTRIBUTING.md file, then look at similar closed PRs for patterns."
+Example bad response: "This is a great first issue with clear requirements!" """
         
-        result = self._generate(prompt, max_tokens=200)
-        if result:
-            return result
-        
-        # Fallback using real data only
-        if merge_chance >= 80:
-            return f"This {difficulty.lower()} issue in {repo} has a high merge probability of {merge_chance}%. The repository health score is {health_score}/100 — a great opportunity to contribute."
-        return f"Consider this {difficulty.lower()} issue in {repo}. Review the labels ({label_str}) before starting."
+        result = self._generate(prompt, max_tokens=150)
+        return result if result else f"Review the issue description and labels ({label_str}) before starting. Check for a CONTRIBUTING.md file in the repository."
     
-    def generate_recommendation_reason(
-        self,
-        title: str,
-        repo: str,
-        score: int,
-        difficulty: str,
-        labels: list = None
-    ) -> str:
-        """
-        Explain why this issue was recommended using real scores.
-        """
+    def generate_recommendation_reason(self, title: str, repo: str, score: int, difficulty: str, labels: list = None) -> str:
         label_str = ", ".join(labels) if labels else "none"
         
-        prompt = f"""Explain in exactly one sentence why this GitHub issue was recommended. Use ONLY the provided data.
+        if not self.enabled:
+            return f"Scored {score}/100. Difficulty: {difficulty}. Labels: {label_str}."
+        
+        prompt = f"""Explain in one sentence why this issue was recommended. Reference specific labels or data.
+Be specific. Mention actual labels if they exist.
 
 Issue: {title}
 Repository: {repo}
@@ -222,58 +173,68 @@ Score: {score}/100
 Difficulty: {difficulty}
 Labels: {label_str}
 
-Be concise and encouraging. Do NOT invent statistics."""
+Example: "Labeled 'good first issue' and 'documentation' — a focused task with clear scope."
+Example: "Scored {score}/100 due to active maintainers and beginner-friendly labeling." """
         
         result = self._generate(prompt, max_tokens=100)
-        if result:
-            return result
-        
-        # Fallback using real data
-        return f"This {difficulty.lower()} issue scored {score}/100 and has relevant labels: {label_str}."
+        return result if result else f"Labels: {label_str}. Score: {score}/100."
     
     def chat(self, message: str) -> str:
-        """General AI chat about open source contribution."""
-        prompt = f"""You are MergeMind AI, an open source contribution expert. Answer helpfully in 2-4 sentences.
+        prompt = f"""You are an open source contribution expert. Answer in 2-3 practical sentences.
+Focus on actionable steps, not motivation or encouragement.
 
-Question: {message}
-
-Keep answers practical. Never invent statistics or repository names."""
+Question: {message}"""
         
         result = self._generate(prompt, max_tokens=250)
-        return result if result else "I'm having trouble answering that right now. Please try again."
+        return result if result else "I'm having trouble answering that. Try asking about specific repositories or issues."
     
-    def analyze_issue(
-        self,
-        title: str,
-        body: str,
-        labels: list,
-        repo: str,
-        stars: int,
-        health_score: int
-    ) -> str:
-        """
-        Analyze a GitHub issue using real data. Never invents difficulty.
-        """
-        label_str = ", ".join(labels) if labels else "none"
+    def analyze_issue(self, title: str, body: str, labels: list, repo: str, stars: int, health_score: int) -> str:
+        if not self.enabled:
+            label_str = ", ".join(labels) if labels else "none"
+            return f"Issue: {title}. Repository: {repo} ({stars:,} stars). Labels: {label_str}. {(body or '')[:200]}"
         
-        prompt = f"""Analyze this GitHub issue for a contributor. Use ONLY the provided data. Do NOT invent difficulty level or statistics.
+        prompt = f"""Summarize this GitHub issue in 2-3 sentences. Describe what the issue asks for.
+Stick to the actual issue text. Do not add opinions about difficulty or suitability.
 
-Repository: {repo} ({stars:,} stars, health: {health_score}/100)
+Repository: {repo}
 Title: {title}
 Description: {body[:500]}
-Labels: {label_str}
-
-Provide exactly 2-3 sentences covering: what the issue is about, one tip for success."""
+Labels: {', '.join(labels) if labels else 'none'}"""
         
         result = self._generate(prompt, max_tokens=200)
         if result:
             return result
         
-        # Fallback using real data
-        return f"Issue in {repo} ({stars:,} stars). Labels: {label_str}. Review the description before starting."
+        label_str = ", ".join(labels) if labels else "none"
+        return f"Issue: {title}. Labels: {label_str}. {(body or '')[:200]}"
+    
+    def mentor_guide(self, issue_title: str, issue_body: str, repo_name: str, language: str, labels: list) -> str:
+        """Generate a beginner-friendly walkthrough of what the issue is asking."""
+        label_str = ", ".join(labels) if labels else "none"
+        
+        if not self.enabled:
+            return f"This issue in {repo_name} is about: {issue_title}. Read the issue description carefully before starting."
+        
+        prompt = f"""Explain this GitHub issue to a first-time contributor in plain English. 
+Use simple language. Define any technical terms. Give one specific tip to get started.
+
+Repository: {repo_name}
+Language: {language}
+Issue: {issue_title}
+Description: {issue_body[:500]}
+Labels: {label_str}
+
+Format:
+1. What this issue is about (1 sentence in plain English)
+2. Key terms explained (if any technical words)
+3. One specific tip to start"""
+        
+        result = self._generate(prompt, max_tokens=200)
+        if result:
+            return result
+        return f"Issue in {repo_name}: {issue_title}. Labels: {label_str}. Read the description and check for a CONTRIBUTING.md file."
     
     def health_check(self) -> dict:
-        """Check if AI service is operational."""
         return {
             "provider": "google-gemini",
             "model": self.model,
@@ -283,5 +244,4 @@ Provide exactly 2-3 sentences covering: what the issue is about, one tip for suc
         }
 
 
-# Global singleton
 ai_service = AIService()
