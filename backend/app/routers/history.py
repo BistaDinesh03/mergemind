@@ -1,4 +1,4 @@
-"""Recommendation history router."""
+"""Recommendation history and progress tracking router."""
 from fastapi import APIRouter, Request, Query
 from ..database import SessionLocal
 from ..models.recommendation import RecommendationHistory
@@ -20,13 +20,9 @@ async def get_recommendation_history(
     try:
         records = db.query(RecommendationHistory).filter(
             RecommendationHistory.user_id == username
-        ).order_by(
-            RecommendationHistory.recommended_at.desc()
-        ).offset(offset).limit(limit).all()
+        ).order_by(RecommendationHistory.recommended_at.desc()).offset(offset).limit(limit).all()
         
-        total = db.query(RecommendationHistory).filter(
-            RecommendationHistory.user_id == username
-        ).count()
+        total = db.query(RecommendationHistory).filter(RecommendationHistory.user_id == username).count()
         
         return {
             "username": username,
@@ -61,6 +57,31 @@ async def get_recommendation_history(
         db.close()
 
 
+@router.get("/progress")
+async def get_progress(request: Request):
+    """Get user's contribution progress stats."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        all_records = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username
+        ).all()
+        
+        return {
+            "username": username,
+            "progress": {
+                "viewed": sum(1 for r in all_records if r.was_viewed),
+                "saved": 0,
+                "started": sum(1 for r in all_records if r.was_clicked),
+                "completed": sum(1 for r in all_records if r.was_contributed),
+                "total_recommendations": len(all_records),
+            }
+        }
+    finally:
+        db.close()
+
+
 @router.post("/recommendations/{issue_github_id}/viewed")
 async def mark_viewed(request: Request, issue_github_id: int):
     """Mark a recommendation as viewed."""
@@ -76,7 +97,51 @@ async def mark_viewed(request: Request, issue_github_id: int):
         if record:
             record.was_viewed = True
             db.commit()
-            return {"status": "ok"}
+            return {"status": "ok", "issue_github_id": issue_github_id}
+        
+        return {"status": "not_found"}
+    finally:
+        db.close()
+
+
+@router.post("/recommendations/{issue_github_id}/started")
+async def mark_started(request: Request, issue_github_id: int):
+    """Mark a recommendation as started (user clicked Start Contributing)."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        record = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username,
+            RecommendationHistory.issue_github_id == issue_github_id
+        ).first()
+        
+        if record:
+            record.was_clicked = True
+            db.commit()
+            return {"status": "ok", "issue_github_id": issue_github_id}
+        
+        return {"status": "not_found"}
+    finally:
+        db.close()
+
+
+@router.post("/recommendations/{issue_github_id}/completed")
+async def mark_completed(request: Request, issue_github_id: int):
+    """Mark a recommendation as completed (PR opened)."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        record = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username,
+            RecommendationHistory.issue_github_id == issue_github_id
+        ).first()
+        
+        if record:
+            record.was_contributed = True
+            db.commit()
+            return {"status": "ok", "issue_github_id": issue_github_id}
         
         return {"status": "not_found"}
     finally:
