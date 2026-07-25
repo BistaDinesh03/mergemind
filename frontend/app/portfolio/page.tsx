@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
@@ -29,7 +29,7 @@ export default function PortfolioPage() {
   const [data, setData] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const username = session?.user?.name || null
+  const username = session?.user?.login || session?.user?.name || null
 
   useEffect(() => {
     if (status === "loading") return

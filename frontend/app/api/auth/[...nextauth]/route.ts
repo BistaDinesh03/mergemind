@@ -15,16 +15,18 @@ const handler = NextAuth({
   ],
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, profile }) {
       if (account) {
         token.accessToken = account.access_token
         token.provider = account.provider
+        token.githubLogin = (profile as any)?.login || ""
       }
       return token
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string
       session.user.id = token.sub as string
+      session.user.login = token.githubLogin as string
       return session
     },
   },
