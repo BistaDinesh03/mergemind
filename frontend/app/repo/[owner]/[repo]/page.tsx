@@ -6,26 +6,13 @@ import { Navbar } from "@/components/Navbar"
 import { 
   Star, GitFork, AlertCircle, Clock, ExternalLink, 
   GitBranch, Package, Shield, Sparkles, ChevronRight, 
-  Loader2, Bug, Activity, Heart, TrendingUp,
-  BookOpen, Users, Wrench, Rocket
+  Loader2, Bug, Activity, Heart, Users, ArrowRight
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-interface HealthCategory {
-  score: number
-  label: string
-  icon?: string
-  reasons?: string[]
-}
-
-interface Health {
-  overall: number
-  status: string
-  categories: Record<string, HealthCategory>
-}
-
 interface RepoData {
+  id: number
   full_name: string
   description: string
   stars: number
@@ -36,21 +23,32 @@ interface RepoData {
   language: string
   license: string | null
   pushed_at: string
+  updated_at: string
   url: string
-  owner: {
-    avatar: string
-  }
+  owner: { avatar: string; login: string }
   topics: string[]
-  health: Health
+  health: any
 }
 
 interface Issue {
   id: number
   number: number
   title: string
-  comments: number
   labels: string[]
+  comments: number
+  created_at: string
+  url: string
+  author: { login: string; avatar: string } | null
   is_beginner_friendly: boolean
+}
+
+interface SimilarRepo {
+  full_name: string
+  description: string
+  stars: number
+  language: string
+  open_issues: number
+  url: string
 }
 
 export default function RepoDetailPage() {
@@ -59,17 +57,31 @@ export default function RepoDetailPage() {
   const repo = params?.repo as string
   const [data, setData] = useState<RepoData | null>(null)
   const [issues, setIssues] = useState<Issue[]>([])
+  const [similar, setSimilar] = useState<SimilarRepo[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!owner || !repo) return
     setLoading(true)
+    
     Promise.all([
       fetch(`${API}/api/github/repositories/${owner}/${repo}`).then(r => r.json()).catch(() => null),
-      fetch(`${API}/api/github/repositories/${owner}/${repo}/issues?per_page=5`).then(r => r.json()).catch(() => null),
-    ]).then(([rd, id]) => {
+      fetch(`${API}/api/github/repositories/${owner}/${repo}/issues?per_page=10`).then(r => r.json()).catch(() => null),
+    ]).then(async ([rd, id]) => {
       setData(rd)
-      setIssues(id?.issues || [])
+      const issueList = id?.issues || []
+      setIssues(issueList)
+      
+      // If no issues found, fetch similar repos
+      if (issueList.length === 0) {
+        try {
+          const sr = await fetch(`${API}/api/github/repositories/${owner}/${repo}/similar?limit=3`)
+          if (sr.ok) {
+            const simData = await sr.json()
+            setSimilar(simData.similar || [])
+          }
+        } catch {}
+      }
     }).finally(() => setLoading(false))
   }, [owner, repo])
 
@@ -99,23 +111,23 @@ export default function RepoDetailPage() {
   const forks = data.forks || 0
   const openIssues = data.open_issues || 0
 
+  const beginnerIssues = issues.filter(i => i.is_beginner_friendly)
+  const otherIssues = issues.filter(i => !i.is_beginner_friendly)
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
         
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-zinc-500">
           <Link href="/discover" className="hover:text-zinc-300 transition-colors">Discover</Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-zinc-200 font-medium">{data.full_name || `${owner}/${repo}`}</span>
         </div>
 
-        {/* REPO HEADER */}
         <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
           <div className="flex items-start gap-5">
-            <img src={data.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} 
-              alt="" className="w-14 h-14 rounded-full ring-1 ring-[#27272a] flex-shrink-0" />
+            <img src={data.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} alt="" className="w-14 h-14 rounded-full ring-1 ring-[#27272a] flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold">{data.full_name || `${owner}/${repo}`}</h1>
               <p className="text-zinc-400 text-base mt-1">{data.description || "No description"}</p>
@@ -125,13 +137,11 @@ export default function RepoDetailPage() {
                 ))}
               </div>
             </div>
-            <a href={data.url || `https://github.com/${owner}/${repo}`} target="_blank" rel="noopener noreferrer"
-              className="h-10 px-5 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200 active:scale-[0.98] flex-shrink-0">
+            <a href={data.url || `https://github.com/${owner}/${repo}`} target="_blank" rel="noopener noreferrer" className="h-10 px-5 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 flex-shrink-0">
               <ExternalLink className="w-4 h-4" /> GitHub
             </a>
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mt-6 pt-6 border-t border-[#27272a]">
             {[
               { icon: Star, label: "Stars", value: stars.toLocaleString(), color: "text-yellow-400" },
@@ -152,19 +162,12 @@ export default function RepoDetailPage() {
           </div>
         </div>
 
-        {/* TWO COLUMN: Health + AI */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* HEALTH SCORE */}
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Overall Score */}
             <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-[24px] p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2.5">
-                    <Heart className="w-5 h-5 text-purple-400" /> Repository Health
-                  </h2>
+                  <h2 className="text-xl font-bold flex items-center gap-2.5"><Heart className="w-5 h-5 text-purple-400" /> Repository Health</h2>
                   <p className="text-sm text-zinc-500 mt-1">Analyzed across 4 dimensions</p>
                 </div>
                 <div className="text-right">
@@ -172,34 +175,20 @@ export default function RepoDetailPage() {
                   <p className="text-sm text-zinc-500">out of 100</p>
                 </div>
               </div>
-
-              <span className={`inline-flex px-3 py-1.5 rounded-full text-sm font-medium ${
-                health.status === "Excellent" ? "bg-green-500/20 text-green-400" :
-                health.status === "Good" ? "bg-blue-500/20 text-blue-400" :
-                "bg-yellow-500/20 text-yellow-400"
-              }`}>{health.status || "Unknown"}</span>
+              <span className={`inline-flex px-3 py-1.5 rounded-full text-sm font-medium ${health.status === "Excellent" ? "bg-green-500/20 text-green-400" : health.status === "Good" ? "bg-blue-500/20 text-blue-400" : "bg-yellow-500/20 text-yellow-400"}`}>{health.status || "Unknown"}</span>
             </div>
 
-            {/* Factor Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {Object.entries(categories).length > 0 ? (
                 Object.entries(categories).map(([key, cat]: [string, any]) => (
-                  <div key={key} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 hover:border-zinc-600 transition-all duration-200">
+                  <div key={key} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-semibold capitalize">{cat.label || key}</span>
-                      <span className={`text-lg font-bold ${
-                        cat.score >= 80 ? "text-green-400" : cat.score >= 60 ? "text-blue-400" : "text-yellow-400"
-                      }`}>{cat.score}</span>
+                      <span className={`text-lg font-bold ${cat.score >= 80 ? "text-green-400" : cat.score >= 60 ? "text-blue-400" : "text-yellow-400"}`}>{cat.score}</span>
                     </div>
-                    
                     <div className="w-full h-2 bg-[#27272a] rounded-full overflow-hidden mb-2">
-                      <div className={`h-2 rounded-full transition-all duration-700 ${
-                        cat.score >= 80 ? "bg-gradient-to-r from-green-500 to-emerald-500" : 
-                        cat.score >= 60 ? "bg-gradient-to-r from-blue-500 to-indigo-500" : 
-                        "bg-gradient-to-r from-yellow-500 to-amber-500"
-                      }`} style={{ width: `${cat.score}%` }} />
+                      <div className={`h-2 rounded-full ${cat.score >= 80 ? "bg-gradient-to-r from-green-500 to-emerald-500" : cat.score >= 60 ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gradient-to-r from-yellow-500 to-amber-500"}`} style={{ width: `${cat.score}%` }} />
                     </div>
-                    
                     {cat.reasons?.length > 0 && (
                       <div className="space-y-0.5">
                         {cat.reasons.map((r: string, i: number) => (
@@ -218,63 +207,107 @@ export default function RepoDetailPage() {
             </div>
           </div>
 
-          {/* AI SUMMARY */}
           <div className="space-y-5">
             <div className="bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/20 rounded-[20px] p-6 sticky top-20">
-              <h3 className="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" /> AI Summary
-              </h3>
+              <h3 className="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4" /> AI Summary</h3>
               <p className="text-sm text-zinc-400 leading-relaxed">
                 {data.full_name || `${owner}/${repo}`} is a {data.language || "popular"} repository with {stars.toLocaleString()} stars and {openIssues} open issues.
-                {health.overall >= 80 ? " The maintainers are active and the project is well-documented. Great for contributors of all levels." : 
-                 health.overall >= 60 ? " The project shows moderate activity. Review the open issues before contributing." : 
-                 " Activity appears limited. Check recent commits before investing time."}
+                {health.overall >= 80 ? " The maintainers are active and the project is well-documented. Great for contributors of all levels." : health.overall >= 60 ? " The project shows moderate activity. Review the open issues before contributing." : " Activity appears limited. Check recent commits before investing time."}
               </p>
-              <p className="text-[10px] text-zinc-600 mt-3">Generated by Google Gemini 2.5 Flash</p>
             </div>
           </div>
         </div>
 
-        {/* OPEN ISSUES */}
+        {/* ISSUES SECTION */}
         <section>
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-xl font-bold flex items-center gap-2.5">
-                <Bug className="w-5 h-5 text-zinc-400" /> Open Issues
-              </h2>
-              <p className="text-sm text-zinc-500 mt-1">{issues.length} available to work on</p>
+              <h2 className="text-xl font-bold flex items-center gap-2.5"><Bug className="w-5 h-5 text-zinc-400" /> Open Issues</h2>
+              <p className="text-sm text-zinc-500 mt-1">{issues.length} open — {beginnerIssues.length} beginner friendly</p>
             </div>
-            {issues.length > 0 && (
-              <Link href={`/repo/${owner}/${repo}/issues`} 
-                className="h-10 px-5 bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200">
-                View All Issues <ChevronRight className="w-4 h-4" />
-              </Link>
-            )}
           </div>
 
-          {issues.length === 0 ? (
-            <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-10 text-center">
-              <AlertCircle className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
-              <p className="text-sm text-zinc-500">No open issues found</p>
+          {/* Beginner Issues */}
+          {beginnerIssues.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-green-400 mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" /> Beginner Friendly
+              </h3>
+              <div className="space-y-2">
+                {beginnerIssues.map((issue) => (
+                  <Link key={issue.id} href={`/repo/${owner}/${repo}/issues/${issue.number}`} className="flex items-center justify-between bg-[#18181b] border border-green-500/20 rounded-[20px] p-4 hover:border-green-500/40 transition-all duration-200 group">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <span className="text-sm text-zinc-600 font-mono flex-shrink-0">#{issue.number}</span>
+                      <span className="text-sm text-zinc-300 truncate group-hover:text-white transition-colors">{issue.title}</span>
+                      {issue.labels?.slice(0, 2).map((l: string) => (
+                        <span key={l} className="hidden sm:inline text-xs px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full flex-shrink-0">{l}</span>
+                      ))}
+                    </div>
+                    <div className="text-xs text-zinc-600 flex-shrink-0 ml-4">💬 {issue.comments || 0}</div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {issues.map((issue: Issue) => (
-                <Link key={issue.id} href={`/repo/${owner}/${repo}/issues/${issue.number}`}
-                  className="flex items-center justify-between bg-[#18181b] border border-[#27272a] rounded-[20px] p-4 hover:border-zinc-600 transition-all duration-200 group">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <span className="text-sm text-zinc-600 font-mono flex-shrink-0">#{issue.number}</span>
-                    <span className="text-sm text-zinc-300 truncate group-hover:text-white transition-colors">{issue.title}</span>
-                    {issue.labels?.slice(0, 2).map((l: string) => (
-                      <span key={l} className="hidden sm:inline text-xs px-2 py-0.5 bg-purple-500/10 text-purple-300 rounded-full flex-shrink-0">{l}</span>
+          )}
+
+          {/* Other Issues */}
+          {otherIssues.length > 0 && (
+            <div className="mb-6">
+              {beginnerIssues.length > 0 && <h3 className="text-sm font-semibold text-zinc-400 mb-3">All Issues</h3>}
+              <div className="space-y-2">
+                {otherIssues.map((issue) => (
+                  <Link key={issue.id} href={`/repo/${owner}/${repo}/issues/${issue.number}`} className="flex items-center justify-between bg-[#18181b] border border-[#27272a] rounded-[20px] p-4 hover:border-zinc-600 transition-all duration-200 group">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <span className="text-sm text-zinc-600 font-mono flex-shrink-0">#{issue.number}</span>
+                      <span className="text-sm text-zinc-300 truncate group-hover:text-white transition-colors">{issue.title}</span>
+                      {issue.labels?.slice(0, 2).map((l: string) => (
+                        <span key={l} className="hidden sm:inline text-xs px-2 py-0.5 bg-purple-500/10 text-purple-300 rounded-full flex-shrink-0">{l}</span>
+                      ))}
+                    </div>
+                    <div className="text-xs text-zinc-600 flex-shrink-0 ml-4">💬 {issue.comments || 0}</div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* No issues — show similar repos */}
+          {issues.length === 0 && (
+            <div>
+              <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-8 text-center mb-6">
+                <Bug className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
+                <p className="text-sm text-zinc-400 mb-1">No beginner issues available today.</p>
+                <p className="text-xs text-zinc-600">Here are similar repositories you might like:</p>
+              </div>
+
+              {similar.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-400 mb-3 flex items-center gap-2">
+                    <ArrowRight className="w-4 h-4" /> Similar Repositories
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {similar.map((s) => (
+                      <Link key={s.full_name} href={`/repo/${s.full_name}`} className="block bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 hover:border-purple-500/30 hover:-translate-y-0.5 transition-all duration-200 group">
+                        <h4 className="font-semibold text-sm mb-2 group-hover:text-purple-400 transition-colors">{s.full_name}</h4>
+                        <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{s.description || "No description"}</p>
+                        <div className="flex items-center gap-3 text-xs text-zinc-600">
+                          <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" />{s.stars?.toLocaleString() || 0}</span>
+                          {s.language && <span>{s.language}</span>}
+                          <span className="ml-auto">{s.open_issues} issues</span>
+                        </div>
+                      </Link>
                     ))}
-                    {issue.is_beginner_friendly && (
-                      <span className="hidden sm:inline text-xs px-2 py-0.5 bg-green-500/10 text-green-400 rounded-full flex-shrink-0">🎯 Beginner</span>
-                    )}
                   </div>
-                  <div className="text-xs text-zinc-600 flex-shrink-0 ml-4">💬 {issue.comments || 0}</div>
-                </Link>
-              ))}
+                </div>
+              )}
+
+              {similar.length === 0 && (
+                <div className="text-center py-8">
+                  <Link href="/discover" className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+                    Discover More Repos <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </section>
