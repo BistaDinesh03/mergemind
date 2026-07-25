@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
 import { PortfolioSkeleton } from "@/components/Skeletons"
+import { EmptyState } from "@/components/EmptyState"
 import { Star, Users, GitFork, Layers, Github, AlertCircle, RefreshCw, ExternalLink } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -176,9 +177,11 @@ export default function PortfolioPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-8 text-center">
-              <GitFork className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-              <p className="text-sm text-zinc-500">No repositories found</p>
+            <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-8">
+              <EmptyState 
+                type="portfolio"
+                action={{ label: "Find Issues", href: "/discover" }}
+              />
             </div>
           )}
         </div>
