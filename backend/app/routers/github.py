@@ -28,6 +28,68 @@ async def search_repositories(
 
 
 @router.get(
+    "/search/issues",
+    summary="Search GitHub issues for contribution opportunities",
+    description="Search open GitHub issues by keyword, language, and labels. Returns actual issues ready to work on — not just repository names. Use this to find contribution opportunities."
+)
+async def search_issues(
+    query: Optional[str] = Query(None, description="Search term for issue title or body", example="dark mode"),
+    language: Optional[str] = Query(None, description="Filter by programming language", example="python"),
+    labels: Optional[str] = Query("good first issue,help wanted", description="Comma-separated labels to filter", example="good first issue,help wanted"),
+    sort: str = Query("updated", description="Sort order: created, updated, comments"),
+    order: str = Query("desc", description="Sort direction: asc or desc"),
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(20, ge=1, le=100, description="Results per page")
+):
+    q_parts = ["state:open", "type:issue", "is:public"]
+    if query: q_parts.append(f"{query} in:title,body")
+    if language: q_parts.append(f"language:{language}")
+    if labels:
+        for label in labels.split(","):
+            q_parts.append(f'label:"{label.strip()}"')
+    
+    data = await github_client.request(
+        "https://api.github.com/search/issues",
+        {"q": " ".join(q_parts), "sort": sort, "order": order, "page": page, "per_page": per_page}
+    )
+    
+    if not data:
+        return {"total": 0, "page": page, "per_page": per_page, "issues": []}
+    
+    return {
+        "total": data.get("total_count", 0),
+        "page": page,
+        "per_page": per_page,
+        "issues": [
+            {
+                "id": i["id"],
+                "number": i["number"],
+                "title": i["title"],
+                "state": i.get("state", "open"),
+                "body": (i.get("body") or "")[:200],
+                "labels": [l["name"] for l in i.get("labels", [])],
+                "comments": i.get("comments", 0),
+                "created_at": i.get("created_at"),
+                "updated_at": i.get("updated_at"),
+                "url": i["html_url"],
+                "repository_url": i.get("repository_url", ""),
+                "repository_full_name": i.get("repository_url", "").replace("https://api.github.com/repos/", ""),
+                "user": {
+                    "login": i["user"]["login"],
+                    "avatar": i["user"]["avatar_url"]
+                } if i.get("user") else None,
+                "is_beginner_friendly": any(
+                    l.lower() in ["good first issue", "beginner", "easy", "help wanted"]
+                    for l in [lbl["name"] for lbl in i.get("labels", [])]
+                )
+            }
+            for i in data.get("items", [])
+            if "pull_request" not in i
+        ]
+    }
+
+
+@router.get(
     "/repositories/{owner}/{repo}",
     summary="Get repository details with health score",
     description="Returns detailed information about a GitHub repository including health analysis across activity, documentation, community, and maintenance dimensions.",
