@@ -1,154 +1,139 @@
-"""Recommendation engine — personalized per user."""
+"""Recommendation engine — recommends real GitHub Issues, not repos."""
 import asyncio
 import logging
 import random
+from datetime import datetime, timezone
 from .github_client import github_client
 from .ai_service import ai_service
 from .health_scorer import HealthScorer
 from ..database import SessionLocal
 from ..models.recommendation import RecommendationHistory
-from datetime import datetime, timezone
 
 logger = logging.getLogger("mergemind.recommendations")
 
+BEGINNER_LABELS = [
+    "good first issue",
+    "help wanted",
+    "beginner",
+    "easy",
+    "documentation",
+    "good first bug",
+    "up-for-grabs",
+    "first-timers-only",
+]
+
 
 class RecommendationEngine:
-    
+
     async def get_recommendations(
         self,
         username: str = None,
         limit: int = 5,
         language: str = None
     ) -> list[dict]:
-        """Get personalized recommendations based on user's GitHub profile."""
+        """Get personalized issue recommendations from real GitHub Issues."""
         
         user_languages = []
-        user_repos = []
-        starred_repos = []
         
-        # Step 1: Fetch user's real GitHub data
+        # Step 1: Get user's languages from their repos
         if username:
-            user_data, user_repos, starred_repos = await asyncio.gather(
-                self._fetch_user_profile(username),
-                self._fetch_user_repos(username),
-                self._fetch_starred_repos(username)
+            repos = await github_client.request(
+                f"https://api.github.com/users/{username}/repos",
+                params={"sort": "updated", "per_page": 30, "type": "owner"}
             )
-            user_languages = self._extract_languages(user_repos)
+            if repos:
+                lang_count = {}
+                for repo in repos:
+                    lang = repo.get("language")
+                    if lang and not repo.get("fork"):
+                        lang_count[lang] = lang_count.get(lang, 0) + repo.get("stargazers_count", 0) + 1
+                sorted_langs = sorted(lang_count.items(), key=lambda x: x[1], reverse=True)
+                user_languages = [lang for lang, _ in sorted_langs[:4]]
         
         # Step 2: Determine search languages
         if language:
             search_languages = [language]
         elif user_languages:
-            search_languages = user_languages[:3]  # Top 3 languages
+            search_languages = user_languages
         else:
-            search_languages = ["python", "javascript", "typescript"]
+            search_languages = ["python", "javascript", "typescript", "go", "rust"]
         
-        # Step 3: Search GitHub for beginner-friendly issues in user's languages
-        all_issues = await self._search_issues(search_languages, limit * 3)
+        # Step 3: Search GitHub Issues directly using the Issues Search API
+        all_issues = await self._search_beginner_issues(search_languages, limit * 4)
         
-        # Step 4: Score and rank
-        recommendations = await self._score_and_rank(all_issues, limit, username)
+        # Step 4: Enrich with repo health data and rank
+        recommendations = await self._enrich_and_rank(all_issues, limit, username)
         
         return recommendations
     
-    async def _fetch_user_profile(self, username: str) -> dict:
-        """Fetch user's GitHub profile."""
-        return await github_client.request(f"https://api.github.com/users/{username}")
-    
-    async def _fetch_user_repos(self, username: str) -> list:
-        """Fetch user's repositories."""
-        repos = await github_client.request(
-            f"https://api.github.com/users/{username}/repos",
-            params={"sort": "updated", "per_page": 30, "type": "owner"}
-        )
-        return repos or []
-    
-    async def _fetch_starred_repos(self, username: str) -> list:
-        """Fetch user's starred repositories."""
-        starred = await github_client.request(
-            f"https://api.github.com/users/{username}/starred",
-            params={"per_page": 20}
-        )
-        return starred or []
-    
-    def _extract_languages(self, repos: list) -> list:
-        """Extract and rank languages from user's repos."""
-        lang_count = {}
-        for repo in repos:
-            lang = repo.get("language")
-            if lang and not repo.get("fork"):
-                lang_count[lang] = lang_count.get(lang, 0) + repo.get("stargazers_count", 0) + 1
-        
-        # Sort by frequency (stars + count)
-        sorted_langs = sorted(lang_count.items(), key=lambda x: x[1], reverse=True)
-        return [lang for lang, _ in sorted_langs]
-    
-    async def _search_issues(self, languages: list, limit: int) -> list:
-        """Search GitHub for beginner-friendly issues in given languages."""
+    async def _search_beginner_issues(self, languages: list, limit: int) -> list:
+        """Search GitHub Issues API for beginner-friendly issues."""
         all_issues = []
-        labels = ["good first issue", "help wanted", "beginner", "easy"]
         
-        for lang in languages[:3]:  # Search top 3 languages
-            for label in labels[:2]:  # Try 2 different labels
+        for lang in languages[:3]:
+            if len(all_issues) >= limit:
+                break
+            
+            for label in BEGINNER_LABELS[:4]:
                 if len(all_issues) >= limit:
                     break
                 
                 try:
-                    # Search repositories in this language
-                    repos = await github_client.request(
-                        "https://api.github.com/search/repositories",
+                    q_parts = [
+                        "state:open",
+                        "type:issue",
+                        "is:public",
+                        f'label:"{label}"',
+                        f"language:{lang}"
+                    ]
+                    
+                    data = await github_client.request(
+                        "https://api.github.com/search/issues",
                         {
-                            "q": f"language:{lang} stars:>50 good-first-issues:>0",
+                            "q": " ".join(q_parts),
                             "sort": "updated",
-                            "per_page": 5
+                            "order": "desc",
+                            "per_page": 10
                         }
                     )
                     
-                    if not repos:
+                    if not data:
                         continue
                     
-                    for repo in repos.get("items", [])[:3]:
+                    for item in data.get("items", []):
+                        if "pull_request" in item:
+                            continue
                         if len(all_issues) >= limit:
                             break
                         
-                        owner = repo["owner"]["login"]
-                        repo_name = repo["name"]
+                        repo_url = item.get("repository_url", "")
+                        repo_full_name = repo_url.replace("https://api.github.com/repos/", "")
                         
-                        issues = await github_client.request(
-                            f"https://api.github.com/repos/{owner}/{repo_name}/issues",
-                            params={
-                                "state": "open",
-                                "labels": label,
-                                "sort": "updated",
-                                "per_page": 3
-                            }
-                        )
-                        
-                        if not issues:
+                        if not repo_full_name:
                             continue
                         
-                        for issue in issues:
-                            if "pull_request" in issue:
-                                continue
-                            if len(all_issues) >= limit:
-                                break
-                            
-                            all_issues.append({
-                                "issue": issue,
-                                "repo_data": repo,
-                                "repo_full_name": f"{owner}/{repo_name}"
-                            })
-                            
+                        issue_labels = [l["name"] for l in item.get("labels", [])]
+                        
+                        all_issues.append({
+                            "issue": item,
+                            "repo_full_name": repo_full_name,
+                            "labels": issue_labels,
+                            "matched_label": label,
+                            "is_beginner_friendly": any(
+                                l.lower() in BEGINNER_LABELS
+                                for l in issue_labels
+                            )
+                        })
+                        
                 except Exception as e:
-                    logger.warning(f"Search failed for {lang}/{label}: {str(e)[:80]}")
+                    logger.warning(f"Issue search failed for {lang}/{label}: {str(e)[:80]}")
                     continue
         
-        # Shuffle to add variety
         random.shuffle(all_issues)
         return all_issues[:limit]
     
-    async def _score_and_rank(self, issues: list, limit: int, username: str) -> list:
-        """Score issues and generate recommendations."""
+    async def _enrich_and_rank(self, issues: list, limit: int, username: str) -> list:
+        """Fetch repo data for each issue, score, and rank."""
         recommendations = []
         
         for item in issues:
@@ -156,16 +141,26 @@ class RecommendationEngine:
                 break
             
             issue = item["issue"]
-            repo_data = item["repo_data"]
             repo_full_name = item["repo_full_name"]
+            issue_labels = item["labels"]
+            
+            # Fetch repository data for health score
+            parts = repo_full_name.split("/")
+            if len(parts) != 2:
+                continue
+            
+            owner, repo_name = parts
+            repo_data = await github_client.request(
+                f"https://api.github.com/repos/{owner}/{repo_name}"
+            )
+            
+            if not repo_data:
+                continue
             
             health = HealthScorer.calculate(repo_data)
-            issue_labels = [l["name"] for l in issue.get("labels", [])]
             
-            is_beginner = any(
-                l.lower() in ["good first issue", "beginner", "easy"]
-                for l in issue_labels
-            )
+            is_beginner = item["is_beginner_friendly"]
+            has_good_first = "good first issue" in [l.lower() for l in issue_labels]
             
             rec = {
                 "issue_number": issue["number"],
@@ -174,21 +169,22 @@ class RecommendationEngine:
                 "repo_stars": repo_data.get("stargazers_count", 0),
                 "labels": issue_labels,
                 "overall_score": health.get("overall", 75),
-                "difficulty_score": 85 if is_beginner else 55,
-                "merge_chance": 88 if is_beginner else 65,
-                "beginner_score": 92 if is_beginner else 45,
+                "difficulty_score": 90 if has_good_first else 70 if is_beginner else 50,
+                "merge_chance": 90 if has_good_first else 75 if is_beginner else 60,
+                "beginner_score": 95 if has_good_first else 80 if is_beginner else 40,
                 "repo_health": health.get("overall", 75),
                 "url": issue["html_url"],
-                "verdict": "Highly Recommended" if is_beginner and health.get("overall", 0) >= 70 else "Recommended",
-                "estimated_hours": "1-2h" if is_beginner else "2-4h",
+                "verdict": "Highly Recommended" if has_good_first and health.get("overall", 0) >= 70 else "Recommended" if is_beginner else "Worth Considering",
+                "estimated_hours": "1-2h" if has_good_first else "2-4h" if is_beginner else "4-8h",
                 "reason": ai_service.generate_recommendation_reason(
                     issue["title"], repo_full_name, health.get("overall", 75),
-                    "Easy" if is_beginner else "Medium", issue_labels
+                    "Easy" if has_good_first else "Medium" if is_beginner else "Moderate",
+                    issue_labels
                 )
             }
             recommendations.append(rec)
             
-            # Store history
+            # Store in history
             self._store_history(username, issue, rec, repo_full_name)
         
         return recommendations
