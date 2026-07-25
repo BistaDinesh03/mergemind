@@ -130,6 +130,7 @@ from .routers.portfolio import router as portfolio_router
 from .routers.scoring import router as scoring_router
 from .routers.recommendations import router as rec_router
 from .routers.history import router as history_router
+from .routers.onboarding import router as onboarding_router
 
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 app.include_router(github_router, prefix="/api/github", tags=["GitHub"])
@@ -139,3 +140,4 @@ app.include_router(portfolio_router, prefix="/api/portfolio", tags=["Portfolio"]
 app.include_router(scoring_router, prefix="/api/scoring", tags=["Scoring"])
 app.include_router(rec_router, prefix="/api/recommendations", tags=["Recommendations"])
 app.include_router(history_router, prefix="/api/history", tags=["History"])
+app.include_router(onboarding_router, prefix="/api/onboarding", tags=["Onboarding"])
