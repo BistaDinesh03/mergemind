@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState({ viewed: 0, saved: 0, started: 0, completed: 0 })
-  const username = session?.user?.name || null
+  const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
   const fetchRecommendation = () => {
