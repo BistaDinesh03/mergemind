@@ -4,20 +4,43 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Navbar } from "@/components/Navbar"
 import { 
-  ExternalLink, Clock, MessageSquare, ChevronRight, Loader2,
-  Zap, Thermometer, GitMerge, Smile, Activity, FileText,
-  Sparkles, CheckCircle, Award, Shield, TrendingUp,
-  Heart, Target, ArrowRight, BookOpen
+  ExternalLink, ChevronRight, Loader2, AlertCircle, 
+  GitFork, GitBranch, Terminal, CheckCircle, 
+  Clock, BarChart3, FileCode, Sparkles, ArrowRight,
+  Copy, Check
 } from "lucide-react"
 
-export default function IssueDetailPage() {
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+export default function ContributionGuidePage() {
   const params = useParams()
   const owner = params?.owner as string
   const repo = params?.repo as string
-  const number = params?.number as string
+  const issueNumber = params?.number as string
+  
+  const [guide, setGuide] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [copiedStep, setCopiedStep] = useState<number | null>(null)
 
-  useEffect(() => { const t = setTimeout(() => setLoading(false), 500); return () => clearTimeout(t) }, [])
+  useEffect(() => {
+    if (!owner || !repo || !issueNumber) return
+    setLoading(true)
+    fetch(`${API}/api/github/repositories/${owner}/${repo}/issues/${issueNumber}/guide`)
+      .then(r => {
+        if (!r.ok) throw new Error("Failed to load contribution guide")
+        return r.json()
+      })
+      .then(d => setGuide(d))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [owner, repo, issueNumber])
+
+  const copyCommand = (text: string, stepNum: number) => {
+    navigator.clipboard.writeText(text)
+    setCopiedStep(stepNum)
+    setTimeout(() => setCopiedStep(null), 2000)
+  }
 
   if (loading) {
     return (
@@ -27,193 +50,167 @@ export default function IssueDetailPage() {
     )
   }
 
-  const score = 92
-  const verdict = "Highly Recommended"
-  const confidenceLevel = "High"
-  const factors = [
-    { icon: Thermometer, label: "Difficulty", score: 88, color: "text-green-400", bar: "bg-green-500", ring: "stroke-green-500", reason: "Labeled good first issue. Clear scope with well-defined requirements. Small code changes needed." },
-    { icon: GitMerge, label: "Merge Probability", score: 85, color: "text-blue-400", bar: "bg-blue-500", ring: "stroke-blue-500", reason: "Maintainers merge 92% of PRs within a week. Very responsive to new contributors." },
-    { icon: Clock, label: "Estimated Time", score: 90, color: "text-purple-400", bar: "bg-purple-500", ring: "stroke-purple-500", reason: "Small scope. Estimated 1-2 hours including tests. Perfect for an evening or weekend session." },
-    { icon: Smile, label: "Beginner Friendly", score: 92, color: "text-amber-400", bar: "bg-amber-500", ring: "stroke-amber-500", reason: "Excellent documentation. Supportive community. Clear contribution guidelines provided." },
-    { icon: Activity, label: "Repo Activity", score: 90, color: "text-cyan-400", bar: "bg-cyan-500", ring: "stroke-cyan-500", reason: "Repository pushed today. 99K+ stars. Very active maintainer community." },
-    { icon: FileText, label: "Issue Clarity", score: 78, color: "text-pink-400", bar: "bg-pink-500", ring: "stroke-pink-500", reason: "Good description with reproduction steps. Could benefit from more detailed expected behavior." },
-  ]
+  if (error || !guide) {
+    return (
+      <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
+        <div className="flex flex-col items-center justify-center py-32">
+          <AlertCircle className="w-10 h-10 text-red-400 mb-4" />
+          <p className="text-zinc-400">{error || "Failed to load guide"}</p>
+          <Link href={`/repo/${owner}/${repo}`} className="mt-4 text-sm text-purple-400 hover:text-purple-300">← Back to Repository</Link>
+        </div>
+      </div>
+    )
+  }
 
-  const skillsLearned = ["Type Hints", "Python", "Code Quality", "Testing", "Open Source Workflow"]
+  const g = guide.guide
+  const scoring = guide.scoring
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-4xl mx-auto px-6 py-10 space-y-8 animate-fadeIn">
         
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-zinc-500 mb-8 flex-wrap">
-          <Link href="/dashboard" className="hover:text-zinc-300 transition-colors">Dashboard</Link><ChevronRight className="w-3.5 h-3.5" />
-          <Link href={`/repo/${owner}/${repo}`} className="hover:text-zinc-300 transition-colors">{owner}/{repo}</Link><ChevronRight className="w-3.5 h-3.5" />
-          <Link href={`/repo/${owner}/${repo}/issues`} className="hover:text-zinc-300 transition-colors">Issues</Link><ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-zinc-200 font-medium">#{number}</span>
+        <div className="flex items-center gap-2 text-sm text-zinc-500 flex-wrap">
+          <Link href="/discover" className="hover:text-zinc-300">Discover</Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <Link href={`/repo/${owner}/${repo}`} className="hover:text-zinc-300">{owner}/{repo}</Link>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-zinc-200 font-medium">Issue #{issueNumber}</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+          <span className="text-purple-400 font-medium">Contribution Guide</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-[24px] p-6 sm:p-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide">Contribution Guide</span>
+          </div>
+          <h1 className="text-2xl font-bold mb-2">{guide.issue.title}</h1>
+          <p className="text-zinc-400 mb-4">
+            <a href={guide.issue.url} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 transition-colors inline-flex items-center gap-1">
+              {guide.repository}#{guide.issue.number} <ExternalLink className="w-3 h-3" />
+            </a>
+          </p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {guide.issue.labels?.map((l: string) => (
+              <span key={l} className="px-2.5 py-1 text-xs bg-purple-500/10 text-purple-300 rounded-full border border-purple-500/20">{l}</span>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span className="flex items-center gap-1.5 text-green-400"><Clock className="w-4 h-4" /> {g.estimated_time}</span>
+            <span className="flex items-center gap-1.5 text-blue-400"><BarChart3 className="w-4 h-4" /> {g.difficulty}</span>
+            <span className="flex items-center gap-1.5 text-yellow-400"><FileCode className="w-4 h-4" /> {guide.repository}</span>
+          </div>
+        </div>
+
+        {/* AI Summary */}
+        <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
+          <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-purple-400" /> AI Summary
+          </h2>
+          <p className="text-zinc-400 leading-relaxed">{guide.ai_summary}</p>
+        </div>
+
+        {/* Scoring */}
+        {scoring && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {Object.entries(scoring.factors || {}).map(([key, factor]: [string, any]) => (
+              <div key={key} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-4 text-center">
+                <p className="text-2xl font-bold text-purple-400">{factor.score}</p>
+                <p className="text-xs text-zinc-500 mt-1">{factor.label}</p>
+                <p className="text-[10px] text-zinc-600 mt-1">{factor.weight}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Step-by-Step Guide */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-green-400" /> Step-by-Step Guide
+          </h2>
           
-          {/* LEFT — Score + Factors */}
-          <div className="space-y-6">
-            
-            {/* ═══ AI SCORE RING — The hero ═══ */}
-            <div className="bg-gradient-to-br from-purple-600 via-violet-600 to-blue-600 rounded-[24px] p-8 text-center relative overflow-hidden shadow-2xl shadow-purple-500/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
-              
-              <div className="relative">
-                <p className="text-purple-200 text-xs font-medium uppercase tracking-widest mb-4">AI Analysis Score</p>
-                
-                {/* Score Ring */}
-                <div className="relative w-40 h-40 mx-auto mb-4">
-                  <svg className="w-40 h-40 -rotate-90" viewBox="0 0 160 160">
-                    <circle cx="80" cy="80" r="68" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                    <circle cx="80" cy="80" r="68" fill="none" stroke="url(#scoreGrad)" strokeWidth="8"
-                      strokeDasharray={`${2 * Math.PI * 68}`} strokeDashoffset={`${2 * Math.PI * 68 * 0.08}`} 
-                      strokeLinecap="round" />
-                    <defs>
-                      <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#c084fc" /><stop offset="100%" stopColor="#22c55e" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-6xl font-bold text-white">{score}</span>
-                    <span className="text-purple-200 text-sm">out of 100</span>
-                  </div>
-                </div>
-
-                {/* Confidence */}
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className={`w-2 h-5 rounded-full ${i < 4 ? "bg-white/40" : "bg-white/10"}`} />
-                    ))}
-                  </div>
-                  <span className="text-xs text-purple-200">{confidenceLevel} confidence</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Verdict + CTA */}
-            <div className="space-y-4">
-              <div className="text-center">
-                <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500/10 text-green-400 rounded-full text-sm font-semibold border border-green-500/20">
-                  <Award className="w-4 h-4" /> {verdict}
-                </span>
-              </div>
-
-              <a href={`https://github.com/${owner}/${repo}/issues/${number}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2.5 w-full h-[52px] bg-white hover:bg-zinc-100 text-zinc-900 rounded-[14px] font-semibold text-base transition-all duration-200 active:scale-[0.98] shadow-sm">
-                <ExternalLink className="w-4 h-4" /> Start Contributing on GitHub <ArrowRight className="w-4 h-4" />
-              </a>
-
-              <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-600">
-                <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> AI analysis runs locally</span>
-                <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Generated by Llama 3.2</span>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT — Factor Cards + AI Explanation */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Issue Header */}
-            <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
-              <h1 className="text-xl sm:text-2xl font-bold mb-3 leading-snug">Add type hints to dependencies/utils.py</h1>
-              
-              <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500 mb-4">
-                <span className="px-3 py-1.5 bg-green-500/10 text-green-400 rounded-full text-xs font-medium flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" /> Open
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <img src={`https://avatars.githubusercontent.com/${owner}`} className="w-5 h-5 rounded-full" alt="" />
-                  tiangolo
-                </span>
-                <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> 2 days ago</span>
-                <span className="flex items-center gap-1.5"><MessageSquare className="w-4 h-4" /> 5 comments</span>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 mb-5">
-                {["good first issue","python","enhancement","help wanted"].map(l => (
-                  <span key={l} className="px-2.5 py-1 text-xs bg-purple-500/10 text-purple-300 rounded-full border border-purple-500/20">{l}</span>
-                ))}
-              </div>
-
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                We need to add type hints to the dependencies/utils.py file to improve code quality and developer experience.
-                This is a great first issue for anyone looking to contribute to FastAPI.
-              </p>
-            </div>
-
-            {/* ═══ FACTOR CARDS — The analysis ═══ */}
-            <div>
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-400" /> Score Breakdown
-              </h2>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {factors.map(factor => (
-                  <div key={factor.label} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 hover:border-zinc-600 transition-all duration-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center ${
-                          factor.score >= 80 ? "bg-green-500/10" : factor.score >= 60 ? "bg-blue-500/10" : "bg-yellow-500/10"
-                        }`}>
-                          <factor.icon className={`w-5 h-5 ${factor.color}`} />
-                        </div>
-                        <span className="text-sm font-semibold">{factor.label}</span>
-                      </div>
-                      <span className={`text-xl font-bold ${factor.color}`}>{factor.score}</span>
-                    </div>
-                    
-                    <div className="w-full h-2 bg-[#27272a] rounded-full overflow-hidden mb-2">
-                      <div className={`h-2 ${factor.bar} rounded-full transition-all duration-700`} 
-                        style={{ width: `${factor.score}%` }} />
-                    </div>
-                    
-                    <p className="text-xs text-zinc-500 leading-relaxed">{factor.reason}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ═══ AI MENTOR ADVICE ═══ */}
-            <div className="bg-gradient-to-r from-purple-500/5 to-blue-500/5 border border-purple-500/20 rounded-[20px] p-6">
+          {g.steps?.map((step: any) => (
+            <div key={step.step} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 hover:border-zinc-600 transition-all">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-[14px] bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-5 h-5 text-purple-400" />
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-sm font-bold text-purple-400">{step.step}</span>
                 </div>
-                <div>
-                  <h3 className="text-base font-bold mb-2">AI Mentor Advice</h3>
-                  <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-                    This is an excellent first contribution. The maintainers are welcoming, the scope is clearly defined, 
-                    and you will learn about Python type hints and code quality practices. Start by reading the CONTRIBUTING.md, 
-                    then add type hints to the functions in utils.py. Run the tests before submitting your PR.
-                  </p>
-
-                  {/* Skills you will learn */}
-                  <div>
-                    <p className="text-xs text-zinc-500 mb-2 flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5" /> Skills you will gain
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {skillsLearned.map(skill => (
-                        <span key={skill} className="px-2.5 py-1 text-xs bg-[#09090b]/50 text-zinc-300 rounded-full border border-[#27272a]">
-                          {skill}
-                        </span>
-                      ))}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold mb-2">{step.title}</h3>
+                  <p className="text-sm text-zinc-400 mb-3">{step.description}</p>
+                  
+                  {step.command && (
+                    <div className="relative">
+                      <pre className="bg-[#09090b] rounded-[14px] p-4 text-sm text-green-400 font-mono overflow-x-auto whitespace-pre-wrap">
+                        {step.command}
+                      </pre>
+                      <button
+                        onClick={() => copyCommand(step.command, step.step)}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] transition-colors"
+                      >
+                        {copiedStep === step.step ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
+                      </button>
                     </div>
-                  </div>
+                  )}
+                  
+                  {step.commands && step.commands.map((cmd: string, i: number) => (
+                    <div key={i} className="relative mb-2">
+                      <pre className="bg-[#09090b] rounded-[14px] p-4 text-sm text-green-400 font-mono overflow-x-auto">{cmd}</pre>
+                      <button
+                        onClick={() => copyCommand(cmd, step.step * 100 + i)}
+                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-[#27272a] hover:bg-[#3f3f46] transition-colors"
+                      >
+                        {copiedStep === step.step * 100 + i ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 text-zinc-400" />}
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {step.files_to_edit && (
+                    <div className="mt-3">
+                      <p className="text-xs text-zinc-500 mb-1">Likely files to edit:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {step.files_to_edit.map((f: string, i: number) => (
+                          <span key={i} className="px-2.5 py-1 text-xs bg-blue-500/5 text-blue-300 rounded-full border border-blue-500/10">{f}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {step.action && (
+                    <a href={step.action.match(/https?:\/\/[^\s]+/)?.[0] || "#"} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors">
+                      {step.action} <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
+          ))}
+        </div>
 
+        {/* PR Checklist */}
+        <div className="bg-[#18181b] border border-green-500/20 rounded-[20px] p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-400" /> Pull Request Checklist
+          </h2>
+          <div className="space-y-2">
+            {g.pull_request_checklist?.map((item: string, i: number) => (
+              <p key={i} className="text-sm text-zinc-400 flex items-center gap-2">
+                <span className="text-green-400">✓</span> {item.replace("✓ ", "")}
+              </p>
+            ))}
           </div>
         </div>
+
+        {/* Back to Issue */}
+        <div className="text-center pb-8">
+          <a href={guide.issue.url} target="_blank" rel="noopener noreferrer" className="h-10 px-5 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+            Open Issue on GitHub <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+
       </main>
     </div>
   )
