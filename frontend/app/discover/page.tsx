@@ -123,7 +123,7 @@ export default function DiscoverPage() {
 
         {!loading && !error && repos.length === 0 && (
           <EmptyState 
-            type="discover" 
+            kind="discover" 
             action={{ label: "Clear Filters", onClick: () => { setLanguage(""); fetchRepos() } }}
             secondaryAction={{ label: "Browse Popular", href: "/discover" }}
           />
