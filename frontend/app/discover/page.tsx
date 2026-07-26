@@ -24,7 +24,6 @@ export default function DiscoverPage() {
   const [sort, setSort] = useState("updated")
   const [searchQuery, setSearchQuery] = useState("")
   const abortRef = useRef<AbortController | null>(null)
-  const initialFetchDone = useRef(false)
 
   const fetchItems = useCallback(async (query = "") => {
     if (!API) { setError("API URL not configured"); setLoading(false); setHasLoaded(true); return }
@@ -64,16 +63,20 @@ export default function DiscoverPage() {
   }, [language, sort, mode, difficulty])
 
   useEffect(() => {
-    if (!initialFetchDone.current) { initialFetchDone.current = true; fetchItems() }
+    fetchItems()
     return () => { if (abortRef.current) abortRef.current.abort() }
-  }, [fetchItems])
+  }, [])
 
   const switchMode = (newMode: "issues" | "repos") => {
     if (newMode === mode) return
     setItems([])
     setHasLoaded(false)
     setLoading(true)
+    setError(null)
     setMode(newMode)
+    setTimeout(() => {
+      fetchItems()
+    }, 0)
   }
 
   if (!API) {
