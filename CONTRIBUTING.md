@@ -1,72 +1,50 @@
-\# Contributing to MergeMind
+# Contributing to MergeMind
 
+Thank you for your interest in contributing to MergeMind.
 
+MergeMind helps developers find beginner-friendly open source issues and make their first contribution. Everyone is welcome, whether this is your first pull request or you've contributed before.
 
-Thanks for your interest in contributing! MergeMind is an AI-powered platform that helps developers find their next open-source contribution.
+---
 
+## First Time Contributing?
 
+If you're new to open source, start with issues labeled:
 
-\## Quick Links
+- `good first issue` – Best place to start
+- `help wanted` – The project needs community help
+- `bug` – Fix an existing problem
+- `enhancement` – Improve an existing feature
+- `documentation` – Improve documentation
 
+Most beginner issues take less than 30 minutes.
 
+---
 
-\- \[Project Overview](01\_PROJECT\_OVERVIEW.md)
+## Contribution Workflow
 
-\- \[Tech Stack](02\_TECH\_STACK.md)
+```text
+Fork Repository
+      ↓
+Clone Repository
+      ↓
+Create Branch
+      ↓
+Make Changes
+      ↓
+Test
+      ↓
+Commit
+      ↓
+Push
+      ↓
+Open Pull Request
+```
 
-\- \[Quick Start](18\_QUICK\_START.md)
+---
 
-\- \[API Docs](04\_API\_DOCUMENTATION.md)
-
-
-
-\## Development Setup
-
-
-
-\### Prerequisites
-
-
-
-\- Node.js 20+
-
-\- Python 3.11+
-
-\- Docker Desktop
-
-\- Git
-
-\- GitHub account
-
-
-
-\### Quick Start (Docker)
-
-
-
-```bash
-
-<<<<<<< Updated upstream
-Thanks for your interest in contributing — MergeMind helps developers find their next open-source contribution, and it's built the same way.
-
-## Quick links
-
-- [Project Overview](01_PROJECT_OVERVIEW.md)
-- [Tech Stack](02_TECH_STACK.md)
-- [Quick Start](18_QUICK_START.md)
-- [API Docs](04_API_DOCUMENTATION.md)
-
-<br>
-
-## Development setup
-
-**Prerequisites:** Node.js 20+, Python 3.11+, Docker Desktop, Git, a GitHub account.
-
-**Quick start (Docker):**
+## Quick Start
 
 ```bash
-=======
->>>>>>> Stashed changes
 git clone https://github.com/BistaDinesh03/mergemind.git
 
 cd mergemind
@@ -74,155 +52,118 @@ cd mergemind
 docker compose up -d
 ```
 
-<<<<<<< Updated upstream
-- Frontend: `http://127.0.0.1:3000`
-- Backend: `http://127.0.0.1:8000`
-- API docs: `http://127.0.0.1:8000/docs`
+Frontend: http://localhost:3000
 
-**Manual setup:**
+Backend: http://localhost:8000
 
-```bash
-# backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # venv\Scripts\activate on Windows
-pip install -r requirements.txt
-cp .env.example .env      # fill in your tokens
-uvicorn app.main:app --reload
+Need more setup instructions?
 
-# frontend
-cd frontend
-npm install
-cp .env.local.example .env.local  # fill in your tokens
-npm run dev
-```
+See `DEPLOYMENT.md`.
 
-<br>
+---
 
-## Branch naming
+## Branch Naming
 
-```
+```text
 feature/short-description
 fix/short-description
 docs/short-description
-refactor/short-description
 ```
 
-Examples: `fix/oauth-callback-url`, `feature/repo-health-score`, `docs/api-endpoints`
+Example:
 
-<br>
-
-## Commit messages
-
-We follow [Conventional Commits](https://www.conventionalcommits.org):
-
+```text
+feature/dashboard-redesign
+fix/github-login
+docs/update-readme
 ```
-feat: add repository health scoring
-fix: handle GitHub rate limit 429
-docs: update API documentation
-refactor: extract GitHub client into service
-security: validate JWT session tokens
-perf: add Gemini response caching
-test: add portfolio endpoint tests
+
+---
+
+## Commit Messages
+
+We use Conventional Commits.
+
+```text
+feat: add issue filters
+
+fix: resolve GitHub OAuth bug
+
+docs: improve README
+
+refactor: simplify API service
+
+test: add repository tests
+
 chore: update dependencies
 ```
 
-<br>
+---
 
-## Pull request process
+## Before Opening a Pull Request
 
-1. Fork the repo and create your branch from `main`
-2. Make your changes, following the coding standards below
-3. Test locally: `npm run build` (frontend) and `python -m pytest` (backend)
-4. Confirm there are no TypeScript errors and no linting errors
-5. Write a clear PR description — what changed, why, and how you tested it
-6. Request review from a maintainer
-7. Address feedback and squash commits if requested
+Please make sure:
 
-<br>
+- [ ] Your code builds successfully
+- [ ] Tests pass
+- [ ] Your change is focused on one feature or fix
+- [ ] Commit messages are clear
+- [ ] The PR description explains what changed
 
-## Coding standards
+---
 
-**Frontend (TypeScript/React)**
+## Coding Guidelines
 
-- Functional components with hooks
-- Type all props with interfaces
-- Use the `"use client"` directive for client components
-- API calls use `process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"`
-- Tailwind CSS, utility-first
-- Pages live in `app/`, reusable components in `components/`
+### Frontend
 
-**Backend (Python/FastAPI)**
+- Use functional React components
+- Use TypeScript
+- Use Tailwind CSS
+- Keep components reusable
+
+### Backend
 
 - Follow PEP 8
-- Type all function signatures
-- Use Pydantic models for request/response bodies
-- Services hold business logic; routers only handle HTTP
-- Use the unified `github_client` for all GitHub API calls — no ad hoc requests
-- Never hardcode usernames or demo data
-- Raise `HTTPException` with proper status codes
+- Type public functions
+- Keep business logic in services
+- Do not hardcode data
 
-<br>
+---
 
-## Project structure
+## Running Tests
 
-```text
-mergemind/
-├── backend/
-│   └── app/
-│       ├── main.py          # FastAPI entry point
-│       ├── config.py        # Settings + validation
-│       ├── routers/         # API endpoints
-│       ├── services/        # Business logic
-│       ├── models/          # Database models
-│       └── monitoring.py    # Health checks, logging
-├── frontend/
-│   └── app/                 # Next.js App Router pages
-│       └── components/      # Reusable React components
-└── docker-compose.yml       # Local dev setup
-```
-
-<br>
-
-## Testing before submitting
+Frontend
 
 ```bash
-# frontend — must pass with zero errors
 cd frontend
 npm run build
-npm run lint
+```
 
-# backend — all tests pass
+Backend
+
+```bash
 cd backend
 python -m pytest
 ```
 
-**Manual checks:**
+---
 
-- [ ] Sign in with GitHub works
-- [ ] Dashboard loads user data
-- [ ] Discover page searches and filters
-- [ ] Repository detail page opens
-- [ ] Portfolio shows repositories
-- [ ] No console errors in the browser
-- [ ] Health endpoint returns 200
+## Need Help?
 
-<br>
+If you have questions:
 
-## Good first issues
+- Comment on the issue
+- Open a GitHub Discussion
+- Open a new Issue
 
-Look for issues labeled `good first issue`. These are curated for new contributors and include a clear problem description, expected behavior, files to modify, and testing instructions.
+We're happy to help.
 
-<br>
+---
 
-## Code of conduct
+## Thank You
 
-This project follows the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you agree to uphold it.
+Every contribution helps improve MergeMind.
 
-<br>
+Whether you fix a typo, improve the design, or build a new feature, your work makes the project better for everyone.
 
-## Questions?
-
-Open an issue on GitHub, check the `docs/` folder, or review the [API Documentation](04_API_DOCUMENTATION.md) for endpoint details.
-=======
->>>>>>> Stashed changes
+Happy contributing!
