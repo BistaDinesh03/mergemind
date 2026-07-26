@@ -85,6 +85,7 @@ export default function DiscoverPage() {
           <h1 className="text-2xl font-bold">Discover</h1>
         </div>
 
+        {/* Mode Toggle */}
         <div className="flex items-center gap-1 mb-6 bg-[#18181b] rounded-[14px] p-1 w-fit">
           <button onClick={() => setMode("issues")}
             className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
@@ -96,6 +97,7 @@ export default function DiscoverPage() {
           </button>
         </div>
 
+        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <SearchBar onSearch={(q) => fetchItems(q)} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
           <LanguageFilter selected={language} onSelect={setLanguage} />
@@ -111,30 +113,35 @@ export default function DiscoverPage() {
             <option value="updated">Recently Updated</option>
             <option value="stars">Most Stars</option>
             <option value="created">Newest</option>
+            <option value="interactions">Most Active</option>
           </select>
         </div>
 
+        {/* Result Count */}
         {!loading && items.length > 0 && (
           <p className="text-xs text-zinc-600 mb-6">
-            Showing {items.length} {mode === "issues" ? "issues" : "repositories"}
+            Showing {items.length} {mode === "issues" ? (difficulty === "beginner" ? "beginner" : "") : ""} {mode === "issues" ? "issues" : "repositories"}
             {searchQuery && <> matching &quot;{searchQuery}&quot;</>}
             {language && <> in {language}</>}
-            {mode === "issues" && difficulty === "beginner" && <> · beginner-friendly</>}
           </p>
         )}
 
+        {/* Loading */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (<RepoCardSkeleton key={i} />))}
           </div>
         )}
 
+        {/* Error */}
         {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => fetchItems()} />}
 
+        {/* Empty */}
         {hasLoaded && !loading && !error && items.length === 0 && (
           <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); fetchItems() } }} />
         )}
 
+        {/* Results */}
         {!loading && !error && items.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item: any) =>
