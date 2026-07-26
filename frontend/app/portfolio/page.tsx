@@ -6,9 +6,8 @@ import { PortfolioSkeleton } from "@/components/Skeletons"
 import { EmptyState } from "@/components/EmptyState"
 import { 
   Github, Star, Users, GitFork, ExternalLink, 
-  MapPin, Building2, Link2, Calendar, Clock,
-  Award, Zap, Code, FolderGit2, ArrowUpRight,
-  CheckCircle, Trophy, Flame, Globe
+  MapPin, Building2, Link2, ArrowUpRight,
+  CheckCircle, Trophy, Globe
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -81,7 +80,7 @@ export default function PortfolioPage() {
   const totalStars = repos.reduce((s: number, r: any) => s + (r.stars || 0), 0)
 
   const achievements = [
-    { icon: FolderGit2, label: "Repositories", value: data.public_repos || 0, color: "text-blue-400" },
+    { icon: GitFork, label: "Repositories", value: data.public_repos || 0, color: "text-blue-400" },
     { icon: Star, label: "Total Stars", value: totalStars, color: "text-yellow-400" },
     { icon: Users, label: "Followers", value: data.followers || 0, color: "text-green-400" },
     { icon: Globe, label: "Languages", value: languages.length, color: "text-purple-400" },
@@ -183,8 +182,8 @@ export default function PortfolioPage() {
           <div className="space-y-3">
             {[
               { icon: CheckCircle, label: "Joined GitHub", date: data.created_at ? new Date(data.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : "Unknown", done: true },
-              { icon: data.public_repos > 0 ? CheckCircle : Circle, label: "Created First Repository", date: data.public_repos > 0 ? `${data.public_repos} repositories` : "Not yet", done: data.public_repos > 0 },
-              { icon: Circle, label: "Opened First Pull Request", date: "Start contributing", done: false },
+              { icon: data.public_repos > 0 ? CheckCircle : CheckCircle, label: "Created First Repository", date: data.public_repos > 0 ? `${data.public_repos} repositories` : "Not yet", done: data.public_repos > 0 },
+              { icon: CheckCircle, label: "Opened First Pull Request", date: "Start contributing", done: false },
               { icon: Trophy, label: "First Merged PR", date: "Complete a contribution", done: false },
             ].map((milestone, i) => (
               <div key={i} className={`flex items-center gap-4 p-4 rounded-[16px] ${milestone.done ? "bg-[#18181b] border border-[#27272a]" : "bg-[#18181b]/50 border border-[#27272a]/50"}`}>
