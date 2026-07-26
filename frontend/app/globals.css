@@ -6,6 +6,26 @@
   body {
     @apply bg-[#09090b] text-white antialiased;
   }
+  
+  [data-nextjs-scroll-focus-boundary] + a,
+  [href="#main-content"] {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  [data-nextjs-scroll-focus-boundary] + a:focus,
+  [href="#main-content"]:focus {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 9999;
+    padding: 8px 16px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    font-size: 14px;
+  }
 }
 
 @layer utilities {
