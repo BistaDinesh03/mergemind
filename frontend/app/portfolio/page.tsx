@@ -28,6 +28,7 @@ export default function PortfolioPage() {
   const { data: session, status } = useSession()
   const [data, setData] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const username = session?.user?.login || session?.user?.name || null
 
@@ -35,6 +36,7 @@ export default function PortfolioPage() {
     if (status === "loading") return
     if (status !== "authenticated" || !username) {
       setLoading(false)
+      setHasLoaded(true)
       return
     }
     setLoading(true)
@@ -52,10 +54,10 @@ export default function PortfolioPage() {
         console.error("Portfolio error:", err)
         setError(err.message || "Failed to load portfolio")
       })
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setHasLoaded(true) })
   }, [status, username])
 
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="max-w-5xl mx-auto px-6 py-12">
@@ -98,7 +100,10 @@ export default function PortfolioPage() {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex items-center justify-center py-32">
-          <p className="text-zinc-400">No data available</p>
+          <EmptyState 
+            kind="portfolio"
+            action={{ label: "Find Issues", href: "/discover" }}
+          />
         </div>
       </div>
     )
@@ -112,7 +117,12 @@ export default function PortfolioPage() {
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-10 animate-fadeIn">
         <div className="flex items-start gap-6 pb-8 border-b border-[#27272a]">
           {data.avatar ? (
-            <img src={data.avatar} alt="" className="w-20 h-20 rounded-full ring-2 ring-[#27272a]" />
+            <img 
+              src={data.avatar} 
+              alt="" 
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              className="w-20 h-20 rounded-full ring-2 ring-[#27272a]" 
+            />
           ) : (
             <div className="w-20 h-20 rounded-full bg-[#27272a] flex items-center justify-center ring-2 ring-[#27272a]">
               <Github className="w-8 h-8 text-zinc-500" />
@@ -176,14 +186,14 @@ export default function PortfolioPage() {
                 </a>
               ))}
             </div>
-          ) : (
+          ) : hasLoaded ? (
             <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-8">
               <EmptyState 
                 kind="portfolio"
                 action={{ label: "Find Issues", href: "/discover" }}
               />
             </div>
-          )}
+          ) : null}
         </div>
       </main>
     </div>

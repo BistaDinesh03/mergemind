@@ -8,7 +8,7 @@ import { IssueCard } from "@/components/IssueCard"
 import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { EmptyState } from "@/components/EmptyState"
-import { Compass, GitPullRequest, BookOpen, SlidersHorizontal } from "lucide-react"
+import { Compass, GitPullRequest, BookOpen } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || ""
 
@@ -16,6 +16,7 @@ export default function DiscoverPage() {
   const [mode, setMode] = useState<"issues" | "repos">("issues")
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState("")
@@ -26,7 +27,7 @@ export default function DiscoverPage() {
   const initialFetchDone = useRef(false)
 
   const fetchItems = useCallback(async (query = "") => {
-    if (!API) { setError("API URL not configured"); setLoading(false); return }
+    if (!API) { setError("API URL not configured"); setLoading(false); setHasLoaded(true); return }
     if (abortRef.current) abortRef.current.abort()
     abortRef.current = new AbortController()
     if (query) { setSearchLoading(true) } else { setLoading(true) }
@@ -58,6 +59,7 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false)
       setSearchLoading(false)
+      setHasLoaded(true)
     }
   }, [language, sort, mode, difficulty])
 
@@ -83,7 +85,6 @@ export default function DiscoverPage() {
           <h1 className="text-2xl font-bold">Discover</h1>
         </div>
 
-        {/* Mode Toggle */}
         <div className="flex items-center gap-1 mb-6 bg-[#18181b] rounded-[14px] p-1 w-fit">
           <button onClick={() => setMode("issues")}
             className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
@@ -95,7 +96,6 @@ export default function DiscoverPage() {
           </button>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <SearchBar onSearch={(q) => fetchItems(q)} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
           <LanguageFilter selected={language} onSelect={setLanguage} />
@@ -114,7 +114,6 @@ export default function DiscoverPage() {
           </select>
         </div>
 
-        {/* Search Context */}
         {!loading && items.length > 0 && (
           <p className="text-xs text-zinc-600 mb-6">
             Showing {items.length} {mode === "issues" ? "issues" : "repositories"}
@@ -124,7 +123,6 @@ export default function DiscoverPage() {
           </p>
         )}
 
-        {/* Results */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (<RepoCardSkeleton key={i} />))}
@@ -133,7 +131,7 @@ export default function DiscoverPage() {
 
         {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => fetchItems()} />}
 
-        {!loading && !error && items.length === 0 && (
+        {hasLoaded && !loading && !error && items.length === 0 && (
           <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); fetchItems() } }} />
         )}
 
