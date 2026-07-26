@@ -3,7 +3,7 @@ import { Star, GitFork, AlertCircle, Clock, Heart } from "lucide-react"
 import Link from "next/link"
 
 export function RepoCard({ repo }: { repo: any }) {
-  const daysAgo = repo.updated_at ? Math.floor((Date.now() - new Date(repo.updated_at).getTime()) / 86400000) : 0
+  const daysAgo = repo.updated_at ? Math.floor((Date.now() - new Date(repo.updated_at).getTime()) / 86400000) : -1
   const healthScore = repo.health?.overall || 75
 
   return (
@@ -16,13 +16,13 @@ export function RepoCard({ repo }: { repo: any }) {
           src={repo.owner?.avatar || ""} 
           alt="" 
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-          className="w-10 h-10 rounded-full ring-1 ring-[#27272a] flex-shrink-0" 
+          className="w-10 h-10 rounded-full ring-1 ring-[#27272a] flex-shrink-0 bg-[#27272a]" 
         />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate group-hover:text-white transition-colors">
-            {repo.full_name}
+            {repo.full_name || "Unknown Repository"}
           </h3>
-          <p className="text-xs text-zinc-500">{repo.owner?.login}</p>
+          <p className="text-xs text-zinc-500">{repo.owner?.login || "Unknown"}</p>
         </div>
         <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${
           healthScore >= 80 ? "bg-green-500/10 text-green-400" : 
@@ -35,7 +35,7 @@ export function RepoCard({ repo }: { repo: any }) {
 
       {/* Description */}
       <p className="text-sm text-zinc-400 mb-3 line-clamp-2 leading-relaxed">
-        {repo.description || "No description"}
+        {repo.description || "No description available."}
       </p>
 
       {/* Stats Row */}
@@ -46,10 +46,10 @@ export function RepoCard({ repo }: { repo: any }) {
             {repo.language}
           </span>
         )}
-        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> {repo.stars?.toLocaleString() || 0}</span>
-        <span className="flex items-center gap-1"><GitFork className="w-3 h-3" /> {repo.forks?.toLocaleString() || 0}</span>
+        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> {(repo.stars || 0).toLocaleString()}</span>
+        <span className="flex items-center gap-1"><GitFork className="w-3 h-3" /> {(repo.forks || 0).toLocaleString()}</span>
         <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {repo.open_issues || 0}</span>
-        {daysAgo >= 0 && (
+        {daysAgo >= 0 && repo.updated_at && (
           <span className="flex items-center gap-1 ml-auto text-zinc-600">
             <Clock className="w-2.5 h-2.5" /> {daysAgo}d ago
           </span>

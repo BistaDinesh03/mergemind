@@ -68,6 +68,12 @@ export default function DiscoverPage() {
     return () => { if (abortRef.current) abortRef.current.abort() }
   }, [fetchItems])
 
+  const switchMode = (newMode: "issues" | "repos") => {
+    setItems([])
+    setHasLoaded(false)
+    setMode(newMode)
+  }
+
   if (!API) {
     return (
       <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -87,11 +93,11 @@ export default function DiscoverPage() {
 
         {/* Mode Toggle */}
         <div className="flex items-center gap-1 mb-6 bg-[#18181b] rounded-[14px] p-1 w-fit">
-          <button onClick={() => setMode("issues")}
+          <button onClick={() => switchMode("issues")}
             className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
             <GitPullRequest className="w-4 h-4" /> Issues
           </button>
-          <button onClick={() => setMode("repos")}
+          <button onClick={() => switchMode("repos")}
             className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "repos" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
             <BookOpen className="w-4 h-4" /> Repositories
           </button>
