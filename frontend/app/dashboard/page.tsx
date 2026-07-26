@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [recommendation, setRecommendation] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [progress, setProgress] = useState({ viewed: 0, saved: 0, started: 0, completed: 0 })
   const username = session?.user?.login || session?.user?.name || null
@@ -30,25 +31,25 @@ export default function DashboardPage() {
         }
       })
       .catch(err => console.error("Recommendations error:", err))
-      .finally(() => setLoading(false))
+      .finally(() => { setLoading(false); setHasLoaded(true) })
   }
 
   useEffect(() => {
     if (status === "loading") return
     if (status !== "authenticated" || !username) {
       setLoading(false)
+      setHasLoaded(true)
       return
     }
     fetchRecommendation()
 
-    // Fetch progress stats
     fetch(API + "/api/history/recommendations?limit=100")
       .then(r => r.json())
       .then(d => {
         const items = d?.history || []
         setProgress({
           viewed: items.filter((i: any) => i.was_viewed).length,
-          saved: 0, // TODO: saved feature
+          saved: 0,
           started: items.filter((i: any) => i.was_clicked).length,
           completed: items.filter((i: any) => i.was_contributed).length,
         })
@@ -80,14 +81,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-3xl mx-auto px-6 py-12 space-y-8 animate-fadeIn">
-
-        {/* Welcome */}
         <div>
           <h1 className="text-2xl font-bold">What should you work on today?</h1>
           <p className="text-sm text-zinc-500 mt-1">@{username}</p>
         </div>
 
-        {/* Progress Cards */}
         <div className="grid grid-cols-4 gap-3">
           {[
             { icon: Eye, label: "Viewed", value: progress.viewed, color: "text-zinc-400" },
@@ -103,7 +101,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Today's Best Issue */}
         {recommendation ? (
           <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-[24px] p-6 sm:p-8">
             <div className="flex items-center justify-between mb-4">
@@ -140,7 +137,7 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-        ) : (
+        ) : hasLoaded ? (
           <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
             <EmptyState 
               kind="recommendations"
@@ -148,9 +145,8 @@ export default function DashboardPage() {
               secondaryAction={{ label: "Try Again", onClick: fetchRecommendation }}
             />
           </div>
-        )}
+        ) : null}
 
-        {/* Discover CTA */}
         <div className="text-center pt-4">
           <Link href="/discover" className="text-sm text-zinc-500 hover:text-purple-400 transition-colors">
             Browse all issues <ArrowRight className="w-3 h-3 inline" />

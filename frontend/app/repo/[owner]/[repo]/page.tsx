@@ -4,9 +4,10 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Navbar } from "@/components/Navbar"
 import { EmptyState } from "@/components/EmptyState"
+import { RepoDetailSkeleton } from "@/components/Skeletons"
 import { 
   Star, GitFork, AlertCircle, Clock, ExternalLink, 
-  Sparkles, ChevronRight, Loader2, Bug, Heart,
+  Sparkles, ChevronRight, Bug, Heart,
   Users, ArrowRight, CheckCircle, XCircle
 } from "lucide-react"
 
@@ -43,7 +44,9 @@ export default function RepoDetailPage() {
   }, [owner, repo])
 
   if (loading) {
-    return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-purple-400" /></div>
+    return (
+      <div className="min-h-screen bg-[#09090b]"><Navbar /><RepoDetailSkeleton /></div>
+    )
   }
 
   if (!data) {
@@ -52,7 +55,7 @@ export default function RepoDetailPage() {
         <div className="flex flex-col items-center justify-center py-32">
           <AlertCircle className="w-10 h-10 text-red-400 mb-4" />
           <p className="text-zinc-400">Repository not found</p>
-          <Link href="/discover" className="mt-4 text-sm text-purple-400">← Back to Discover</Link>
+          <Link href="/discover" className="mt-4 text-sm text-purple-400 hover:text-purple-300">← Back to Discover</Link>
         </div>
       </div>
     )
@@ -93,7 +96,12 @@ export default function RepoDetailPage() {
         {/* Repo Header */}
         <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 sm:p-8">
           <div className="flex items-start gap-5">
-            <img src={data.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} alt="" className="w-14 h-14 rounded-full ring-1 ring-[#27272a] flex-shrink-0" />
+            <img 
+              src={data.owner?.avatar || `https://avatars.githubusercontent.com/${owner}`} 
+              alt="" 
+              onError={(e) => { (e.target as HTMLImageElement).src = `https://avatars.githubusercontent.com/${owner}` }}
+              className="w-14 h-14 rounded-full ring-1 ring-[#27272a] flex-shrink-0" 
+            />
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold">{data.full_name}</h1>
               <p className="text-zinc-400 text-base mt-1">{data.description || "No description"}</p>
