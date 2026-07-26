@@ -1,16 +1,17 @@
 "use client"
-import { Star, GitFork, AlertCircle, Clock, Heart } from "lucide-react"
+import { Star, GitFork, AlertCircle, Clock, Heart, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
 export function RepoCard({ repo }: { repo: any }) {
   const daysAgo = repo.updated_at ? Math.floor((Date.now() - new Date(repo.updated_at).getTime()) / 86400000) : -1
-  const healthScore = repo.health?.overall || 75
+  const healthScore = repo.health?.overall || 0
+  const hasValidScore = repo.health?.overall !== undefined && repo.health?.overall !== null
 
   return (
-    <Link href={`/repo/${repo.full_name}`}
-      className="block bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 card-hover group">
-
-      {/* Header */}
+    <Link 
+      href={`/repo/${repo.full_name}`}
+      className="block bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-600 hover:shadow-lg hover:shadow-black/20 group"
+    >
       <div className="flex items-start gap-3 mb-3">
         <img 
           src={repo.owner?.avatar || ""} 
@@ -20,38 +21,44 @@ export function RepoCard({ repo }: { repo: any }) {
         />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm truncate group-hover:text-white transition-colors">
-            {repo.full_name || "Unknown Repository"}
+            {repo.full_name || "Unknown"}
           </h3>
           <p className="text-xs text-zinc-500">{repo.owner?.login || "Unknown"}</p>
         </div>
-        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${
-          healthScore >= 80 ? "bg-green-500/10 text-green-400" : 
-          healthScore >= 60 ? "bg-blue-500/10 text-blue-400" : 
-          "bg-yellow-500/10 text-yellow-400"
-        }`}>
-          <Heart className="w-2.5 h-2.5" /> {healthScore}
-        </div>
+        {hasValidScore && (
+          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0 ${
+            healthScore >= 80 ? "bg-green-500/10 text-green-400" : 
+            healthScore >= 60 ? "bg-blue-500/10 text-blue-400" : 
+            "bg-yellow-500/10 text-yellow-400"
+          }`}>
+            <Heart className="w-2.5 h-2.5" /> {healthScore}
+          </div>
+        )}
       </div>
 
-      {/* Description */}
       <p className="text-sm text-zinc-400 mb-3 line-clamp-2 leading-relaxed">
         {repo.description || "No description available."}
       </p>
 
-      {/* Stats Row */}
       <div className="flex items-center gap-4 text-xs text-zinc-500 pt-3 border-t border-[#27272a]">
         {repo.language && (
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-yellow-400" />
+            <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
             {repo.language}
           </span>
         )}
-        <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" /> {(repo.stars || 0).toLocaleString()}</span>
-        <span className="flex items-center gap-1"><GitFork className="w-3 h-3" /> {(repo.forks || 0).toLocaleString()}</span>
-        <span className="flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {repo.open_issues || 0}</span>
+        <span className="flex items-center gap-1">
+          <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" /> {(repo.stars || 0).toLocaleString()}
+        </span>
+        <span className="flex items-center gap-1">
+          <GitFork className="w-3 h-3 flex-shrink-0" /> {(repo.forks || 0).toLocaleString()}
+        </span>
+        <span className="flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" /> {repo.open_issues || 0}
+        </span>
         {daysAgo >= 0 && repo.updated_at && (
           <span className="flex items-center gap-1 ml-auto text-zinc-600">
-            <Clock className="w-2.5 h-2.5" /> {daysAgo}d ago
+            <Clock className="w-2.5 h-2.5 flex-shrink-0" /> {daysAgo === 0 ? "today" : `${daysAgo}d ago`}
           </span>
         )}
       </div>
@@ -63,7 +70,7 @@ export function RepoCardSkeleton() {
   return (
     <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 space-y-3">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 shimmer rounded-full" />
+        <div className="w-10 h-10 shimmer rounded-full flex-shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-4 w-3/4 shimmer rounded" />
           <div className="h-3 w-1/3 shimmer rounded" />

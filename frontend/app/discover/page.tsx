@@ -14,7 +14,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || ""
 
 export default function DiscoverPage() {
   const [mode, setMode] = useState<"issues" | "repos">("issues")
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [hasLoaded, setHasLoaded] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
@@ -69,8 +69,10 @@ export default function DiscoverPage() {
   }, [fetchItems])
 
   const switchMode = (newMode: "issues" | "repos") => {
+    if (newMode === mode) return
     setItems([])
     setHasLoaded(false)
+    setLoading(true)
     setMode(newMode)
   }
 
@@ -88,34 +90,34 @@ export default function DiscoverPage() {
       <main className="max-w-6xl mx-auto px-6 py-12 animate-fadeIn">
         <div className="flex items-center gap-2 mb-6">
           <Compass className="w-5 h-5 text-purple-400" />
-          <h1 className="text-2xl font-bold">Discover</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
         </div>
 
-        {/* Mode Toggle */}
         <div className="flex items-center gap-1 mb-6 bg-[#18181b] rounded-[14px] p-1 w-fit">
           <button onClick={() => switchMode("issues")}
-            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
+            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300 shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
             <GitPullRequest className="w-4 h-4" /> Issues
           </button>
           <button onClick={() => switchMode("repos")}
-            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "repos" ? "bg-purple-500/20 text-purple-300" : "text-zinc-500 hover:text-zinc-300"}`}>
+            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "repos" ? "bg-purple-500/20 text-purple-300 shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
             <BookOpen className="w-4 h-4" /> Repositories
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-4">
-          <SearchBar onSearch={(q) => fetchItems(q)} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex-1 min-w-0">
+            <SearchBar onSearch={(q) => fetchItems(q)} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
+          </div>
           <LanguageFilter selected={language} onSelect={setLanguage} />
           {mode === "issues" && (
             <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
-              className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500">
+              className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 flex-shrink-0">
               <option value="beginner">🟢 Beginner</option>
               <option value="all">All Levels</option>
             </select>
           )}
           <select value={sort} onChange={(e) => setSort(e.target.value)}
-            className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500">
+            className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 flex-shrink-0">
             <option value="updated">Recently Updated</option>
             <option value="stars">Most Stars</option>
             <option value="created">Newest</option>
@@ -123,7 +125,6 @@ export default function DiscoverPage() {
           </select>
         </div>
 
-        {/* Result Count */}
         {!loading && items.length > 0 && (
           <p className="text-xs text-zinc-600 mb-6">
             Showing {items.length} {mode === "issues" ? (difficulty === "beginner" ? "beginner" : "") : ""} {mode === "issues" ? "issues" : "repositories"}
@@ -132,22 +133,18 @@ export default function DiscoverPage() {
           </p>
         )}
 
-        {/* Loading */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (<RepoCardSkeleton key={i} />))}
           </div>
         )}
 
-        {/* Error */}
         {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => fetchItems()} />}
 
-        {/* Empty */}
         {hasLoaded && !loading && !error && items.length === 0 && (
           <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); fetchItems() } }} />
         )}
 
-        {/* Results */}
         {!loading && !error && items.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item: any) =>
