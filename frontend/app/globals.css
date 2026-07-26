@@ -6,14 +6,14 @@
   body {
     @apply bg-[#09090b] text-white antialiased;
   }
-  
+
   [data-nextjs-scroll-focus-boundary] + a,
   [href="#main-content"] {
     position: absolute;
     top: -9999px;
     left: -9999px;
   }
-  
+
   [data-nextjs-scroll-focus-boundary] + a:focus,
   [href="#main-content"]:focus {
     position: fixed;
@@ -34,17 +34,17 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
-  
+
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
-  
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  
+
   .animate-fadeIn {
     animation: fadeIn 0.3s ease-out;
   }

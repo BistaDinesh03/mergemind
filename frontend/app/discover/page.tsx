@@ -8,9 +8,17 @@ import { IssueCard } from "@/components/IssueCard"
 import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { EmptyState } from "@/components/EmptyState"
-import { Compass, GitPullRequest, BookOpen } from "lucide-react"
+import { Compass, GitPullRequest, BookOpen, TrendingUp, Sparkles, Zap, Bug } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || ""
+
+const QUICK_FILTERS = [
+  { id: "trending", label: "Trending", icon: TrendingUp },
+  { id: "recommended", label: "Recommended", icon: Sparkles },
+  { id: "beginner", label: "Beginner", icon: Compass },
+  { id: "fast", label: "Fast (<1h)", icon: Zap },
+  { id: "bug", label: "Bug Fixes", icon: Bug },
+]
 
 export default function DiscoverPage() {
   const [mode, setMode] = useState<"issues" | "repos">("issues")
@@ -23,6 +31,7 @@ export default function DiscoverPage() {
   const [difficulty, setDifficulty] = useState("beginner")
   const [sort, setSort] = useState("updated")
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeQuickFilter, setActiveQuickFilter] = useState("")
   const abortRef = useRef<AbortController | null>(null)
   const modeRef = useRef<"issues" | "repos">("issues")
 
@@ -43,7 +52,9 @@ export default function DiscoverPage() {
 
       let endpoint: string
       if (currentMode === "issues") {
-        const labels = difficulty === "beginner" ? "good+first+issue,help+wanted,beginner" : "help+wanted"
+        let labels = "good+first+issue,help+wanted"
+        if (activeQuickFilter === "bug") labels = "bug,good+first+issue"
+        if (activeQuickFilter === "beginner") labels = "good+first+issue,beginner"
         endpoint = `${API}/api/github/search/issues?labels=${labels}&${params}`
       } else {
         endpoint = `${API}/api/github/repositories?${params}`
@@ -79,8 +90,19 @@ export default function DiscoverPage() {
     doFetch(newMode)
   }
 
-  const handleSearch = (query: string) => {
-    doFetch(modeRef.current, query)
+  const handleQuickFilter = (filterId: string) => {
+    const newFilter = activeQuickFilter === filterId ? "" : filterId
+    setActiveQuickFilter(newFilter)
+    setItems([])
+    setHasLoaded(false)
+    setLoading(true)
+    setError(null)
+    modeRef.current = "issues"
+    setMode("issues")
+    if (newFilter === "trending") setSort("interactions")
+    if (newFilter === "fast") setDifficulty("all")
+    else setDifficulty("beginner")
+    setTimeout(() => doFetch("issues"), 0)
   }
 
   if (!API) {
@@ -94,64 +116,87 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-6 py-12 animate-fadeIn">
-        <div className="flex items-center gap-2 mb-6">
-          <Compass className="w-5 h-5 text-purple-400" />
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Compass className="w-6 h-6 text-purple-400" />
           <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
         </div>
 
-        <div className="flex items-center gap-1 mb-6 bg-[#18181b] rounded-[14px] p-1 w-fit">
-          <button onClick={() => switchMode("issues")}
-            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "issues" ? "bg-purple-500/20 text-purple-300 shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-            <GitPullRequest className="w-4 h-4" /> Issues
-          </button>
-          <button onClick={() => switchMode("repos")}
-            className={`px-4 py-2 rounded-[12px] text-sm font-medium transition-all flex items-center gap-2 ${mode === "repos" ? "bg-purple-500/20 text-purple-300 shadow-sm" : "text-zinc-500 hover:text-zinc-300"}`}>
-            <BookOpen className="w-4 h-4" /> Repositories
-          </button>
+        {/* Search + Mode */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex-1">
+            <SearchBar onSearch={(q) => doFetch(modeRef.current, q)} loading={searchLoading} placeholder="Search issues..." />
+          </div>
+          <div className="flex items-center gap-1 bg-[#18181b] rounded-[12px] p-1">
+            <button onClick={() => switchMode("issues")}
+              className={`px-4 py-2 rounded-[10px] text-sm font-medium transition-colors flex items-center gap-2 ${mode === "issues" ? "bg-white text-zinc-900" : "text-zinc-400 hover:text-white"}`}>
+              <GitPullRequest className="w-4 h-4" /> Issues
+            </button>
+            <button onClick={() => switchMode("repos")}
+              className={`px-4 py-2 rounded-[10px] text-sm font-medium transition-colors flex items-center gap-2 ${mode === "repos" ? "bg-white text-zinc-900" : "text-zinc-400 hover:text-white"}`}>
+              <BookOpen className="w-4 h-4" /> Repos
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <div className="flex-1 min-w-0">
-            <SearchBar onSearch={handleSearch} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
-          </div>
+        {/* Quick Filters */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {QUICK_FILTERS.map(f => {
+            const isActive = activeQuickFilter === f.id
+            return (
+              <button key={f.id} onClick={() => handleQuickFilter(f.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                  isActive ? "bg-white text-zinc-900" : "bg-[#1a1a2e] text-zinc-400 border border-gray-700/50 hover:text-white"
+                }`}>
+                <f.icon className="w-3 h-3" /> {f.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
           <LanguageFilter selected={language} onSelect={setLanguage} />
           {mode === "issues" && (
             <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
-              className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 flex-shrink-0">
-              <option value="beginner">🟢 Beginner</option>
+              className="h-9 px-3 bg-[#1a1a2e] border border-gray-700/50 rounded-lg text-white text-xs focus:outline-none focus:border-purple-500">
+              <option value="beginner">Beginner</option>
               <option value="all">All Levels</option>
             </select>
           )}
           <select value={sort} onChange={(e) => setSort(e.target.value)}
-            className="h-[50px] px-4 bg-[#1a1a2e] border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:border-purple-500 flex-shrink-0">
+            className="h-9 px-3 bg-[#1a1a2e] border border-gray-700/50 rounded-lg text-white text-xs focus:outline-none focus:border-purple-500">
             <option value="updated">Recently Updated</option>
             <option value="stars">Most Stars</option>
-            <option value="created">Newest</option>
-            <option value="interactions">Most Active</option>
           </select>
         </div>
 
+        {/* Result Count */}
         {!loading && items.length > 0 && (
-          <p className="text-xs text-zinc-600 mb-6">
-            Showing {items.length} {mode === "issues" ? (difficulty === "beginner" ? "beginner" : "") : ""} {mode === "issues" ? "issues" : "repositories"}
-            {searchQuery && <> matching &quot;{searchQuery}&quot;</>}
+          <p className="text-sm text-zinc-500 mb-6">
+            {items.length.toLocaleString()} {mode === "issues" ? "issues" : "repositories"} found
             {language && <> in {language}</>}
           </p>
         )}
 
+        {/* Loading */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (<RepoCardSkeleton key={i} />))}
           </div>
         )}
 
+        {/* Error */}
         {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => doFetch(modeRef.current)} />}
 
+        {/* Empty */}
         {hasLoaded && !loading && !error && items.length === 0 && (
-          <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); doFetch(modeRef.current) } }} />
+          <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setActiveQuickFilter(""); doFetch(modeRef.current) } }} />
         )}
 
+        {/* Results */}
         {!loading && !error && items.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item: any) =>
