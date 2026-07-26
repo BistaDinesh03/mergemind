@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Navbar } from "@/components/Navbar"
 import { SearchBar } from "@/components/SearchBar"
 import { LanguageFilter } from "@/components/LanguageFilter"
@@ -24,8 +24,9 @@ export default function DiscoverPage() {
   const [sort, setSort] = useState("updated")
   const [searchQuery, setSearchQuery] = useState("")
   const abortRef = useRef<AbortController | null>(null)
+  const modeRef = useRef<"issues" | "repos">("issues")
 
-  const fetchItems = useCallback(async (query = "") => {
+  const doFetch = async (currentMode: "issues" | "repos", query: string = "") => {
     if (!API) { setError("API URL not configured"); setLoading(false); setHasLoaded(true); return }
     if (abortRef.current) abortRef.current.abort()
     abortRef.current = new AbortController()
@@ -41,7 +42,7 @@ export default function DiscoverPage() {
       params.append("per_page", "20")
 
       let endpoint: string
-      if (mode === "issues") {
+      if (currentMode === "issues") {
         const labels = difficulty === "beginner" ? "good+first+issue,help+wanted,beginner" : "help+wanted"
         endpoint = `${API}/api/github/search/issues?labels=${labels}&${params}`
       } else {
@@ -51,7 +52,7 @@ export default function DiscoverPage() {
       const res = await fetch(endpoint, { signal: abortRef.current.signal })
       if (!res.ok) throw new Error("Failed to fetch")
       const data = await res.json()
-      setItems(mode === "issues" ? (data.issues || []) : (data.repositories || []))
+      setItems(currentMode === "issues" ? (data.issues || []) : (data.repositories || []))
     } catch (err: any) {
       if (err.name === "AbortError") return
       setError(err.message)
@@ -60,23 +61,26 @@ export default function DiscoverPage() {
       setSearchLoading(false)
       setHasLoaded(true)
     }
-  }, [language, sort, mode, difficulty])
+  }
 
   useEffect(() => {
-    fetchItems()
+    doFetch("issues")
     return () => { if (abortRef.current) abortRef.current.abort() }
   }, [])
 
   const switchMode = (newMode: "issues" | "repos") => {
-    if (newMode === mode) return
+    if (newMode === modeRef.current) return
+    modeRef.current = newMode
+    setMode(newMode)
     setItems([])
     setHasLoaded(false)
     setLoading(true)
     setError(null)
-    setMode(newMode)
-    setTimeout(() => {
-      fetchItems()
-    }, 0)
+    doFetch(newMode)
+  }
+
+  const handleSearch = (query: string) => {
+    doFetch(modeRef.current, query)
   }
 
   if (!API) {
@@ -109,7 +113,7 @@ export default function DiscoverPage() {
 
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="flex-1 min-w-0">
-            <SearchBar onSearch={(q) => fetchItems(q)} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
+            <SearchBar onSearch={handleSearch} loading={searchLoading} placeholder={mode === "issues" ? "Search issues..." : "Search repositories..."} />
           </div>
           <LanguageFilter selected={language} onSelect={setLanguage} />
           {mode === "issues" && (
@@ -142,10 +146,10 @@ export default function DiscoverPage() {
           </div>
         )}
 
-        {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => fetchItems()} />}
+        {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => doFetch(modeRef.current)} />}
 
         {hasLoaded && !loading && !error && items.length === 0 && (
-          <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); fetchItems() } }} />
+          <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setDifficulty("beginner"); doFetch(modeRef.current) } }} />
         )}
 
         {!loading && !error && items.length > 0 && (
