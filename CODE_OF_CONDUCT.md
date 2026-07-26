@@ -1,122 +1,39 @@
-\# Contributor Covenant Code of Conduct
+# Code of Conduct
 
+## Our Goal
 
+MergeMind is a welcoming community for everyone. We want contributors of all experience levels to feel comfortable participating.
 
-\## Our Pledge
+## Expected Behavior
 
+Please:
 
+- Be respectful and kind.
+- Give constructive feedback.
+- Help others learn.
+- Keep discussions professional.
+- Respect different opinions and experiences.
 
-We as members, contributors, and leaders pledge to make participation in our
+## Unacceptable Behavior
 
-community a harassment-free experience for everyone, regardless of age, body
+The following is not allowed:
 
-size, visible or invisible disability, ethnicity, sex characteristics, gender
+- Harassment or discrimination.
+- Personal attacks or insults.
+- Hate speech or offensive language.
+- Sharing someone else's private information.
+- Spam or disruptive behavior.
 
-identity and expression, level of experience, education, socio-economic status,
+## Enforcement
 
-nationality, personal appearance, race, religion, or sexual identity and
+Project maintainers may edit, lock, or remove comments, issues, pull requests, or discussions that violate this Code of Conduct.
 
-orientation.
+## Reporting
 
+If you experience or witness inappropriate behavior, please contact:
 
+**dineshbista642@gmail.com**
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
+All reports will be handled respectfully and privately.
 
-diverse, inclusive, and healthy community.
-
-
-
-\## Our Standards
-
-
-
-Examples of behavior that contributes to a positive environment:
-
-
-
-\- Demonstrating empathy and kindness toward other people
-
-\- Being respectful of differing opinions, viewpoints, and experiences
-
-\- Giving and gracefully accepting constructive feedback
-
-\- Accepting responsibility and apologizing to those affected by our mistakes
-
-\- Focusing on what is best for the overall community
-
-
-
-Examples of unacceptable behavior:
-
-
-
-\- The use of sexualized language or imagery, and sexual attention or advances
-
-\- Trolling, insulting or derogatory comments, and personal or political attacks
-
-\- Public or private harassment
-
-\- Publishing others' private information without explicit permission
-
-\- Other conduct which could reasonably be considered inappropriate in a
-
-&#x20; professional setting
-
-
-
-\## Enforcement Responsibilities
-
-
-
-Project maintainers are responsible for clarifying and enforcing our standards of
-
-acceptable behavior and will take appropriate and fair corrective action in
-
-response to any behavior that they deem inappropriate, threatening, offensive,
-
-or harmful.
-
-
-
-\## Scope
-
-
-
-This Code of Conduct applies within all community spaces, and also applies when
-
-an individual is officially representing the community in public spaces.
-
-
-
-\## Enforcement
-
-
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-
-reported to the project maintainer at \[dineshbista642@gmail.com]. All
-
-complaints will be reviewed and investigated promptly and fairly.
-
-
-
-Project maintainers are obligated to respect the privacy and security of the
-
-reporter of any incident.
-
-
-
-\## Attribution
-
-
-
-This Code of Conduct is adapted from the \[Contributor Covenant]\[homepage],
-
-version 2.0, available at
-
-https://www.contributor-covenant.org/version/2/0/code\_of\_conduct.html.
-
-
-
-\[homepage]: https://www.contributor-covenant.org
-
+Thank you for helping make MergeMind a welcoming place for everyone.
