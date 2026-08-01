@@ -4,6 +4,7 @@ import { useSession, signIn } from "next-auth/react"
 import { Navbar } from "@/components/Navbar"
 import { PortfolioSkeleton } from "@/components/Skeletons"
 import { EmptyState } from "@/components/EmptyState"
+import { fetchWithCache } from "@/lib/api"
 import { 
   Github, Star, Users, GitFork, ExternalLink, 
   MapPin, Building2, Link2, ArrowUpRight,
@@ -25,16 +26,15 @@ export default function PortfolioPage() {
       setLoading(false)
       return
     }
+    const startTime = performance.now()
     setLoading(true)
     setError(null)
-    fetch(API + "/api/portfolio/" + username)
-      .then(r => {
-        if (!r.ok) throw new Error("Failed to load portfolio")
-        return r.json()
-      })
+    
+    fetchWithCache(`${API}/api/portfolio/${username}`)
       .then(d => {
         if (d?.error) throw new Error(d.error)
         setData(d)
+        console.log(`Portfolio loaded in ${Math.round(performance.now() - startTime)}ms`)
       })
       .catch(err => setError(err.message || "Failed to load portfolio"))
       .finally(() => setLoading(false))
@@ -90,7 +90,6 @@ export default function PortfolioPage() {
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-12 animate-fadeIn">
         
-        {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <img 
             src={data.avatar || ""} 
@@ -115,7 +114,6 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {achievements.map(a => (
             <div key={a.label} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 text-center hover:border-zinc-600 transition-all">
@@ -126,7 +124,6 @@ export default function PortfolioPage() {
           ))}
         </div>
 
-        {/* Skills */}
         {languages.length > 0 && (
           <section>
             <h2 className="text-lg font-bold mb-4">Technologies</h2>
@@ -140,7 +137,6 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        {/* Featured Projects */}
         {repos.length > 0 && (
           <section>
             <h2 className="text-lg font-bold mb-4">Featured Projects</h2>
@@ -176,7 +172,6 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        {/* Journey Milestones */}
         <section>
           <h2 className="text-lg font-bold mb-4">Open Source Journey</h2>
           <div className="space-y-3">
