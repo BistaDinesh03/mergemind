@@ -8,6 +8,7 @@ import { IssueCard } from "@/components/IssueCard"
 import { RepoCardSkeleton } from "@/components/Skeletons"
 import { ErrorDisplay } from "@/components/ErrorDisplay"
 import { EmptyState } from "@/components/EmptyState"
+import { fetchWithCache } from "@/lib/api"
 import { Compass, GitPullRequest, BookOpen, TrendingUp, Sparkles, Zap, Bug } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || ""
@@ -28,9 +29,7 @@ export default function DiscoverPage() {
   const [searchLoading, setSearchLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [language, setLanguage] = useState("")
-  const [difficulty, setDifficulty] = useState("beginner")
   const [sort, setSort] = useState("updated")
-  const [searchQuery, setSearchQuery] = useState("")
   const [activeQuickFilter, setActiveQuickFilter] = useState("")
   const abortRef = useRef<AbortController | null>(null)
   const modeRef = useRef<"issues" | "repos">("issues")
@@ -41,7 +40,8 @@ export default function DiscoverPage() {
     abortRef.current = new AbortController()
     if (query) { setSearchLoading(true) } else { setLoading(true) }
     setError(null)
-    setSearchQuery(query)
+
+    const startTime = performance.now()
 
     try {
       const params = new URLSearchParams()
@@ -60,10 +60,9 @@ export default function DiscoverPage() {
         endpoint = `${API}/api/github/repositories?${params}`
       }
 
-      const res = await fetch(endpoint, { signal: abortRef.current.signal })
-      if (!res.ok) throw new Error("Failed to fetch")
-      const data = await res.json()
+      const data = await fetchWithCache(endpoint)
       setItems(currentMode === "issues" ? (data.issues || []) : (data.repositories || []))
+      console.log(`Discover loaded in ${Math.round(performance.now() - startTime)}ms`)
     } catch (err: any) {
       if (err.name === "AbortError") return
       setError(err.message)
@@ -99,9 +98,6 @@ export default function DiscoverPage() {
     setError(null)
     modeRef.current = "issues"
     setMode("issues")
-    if (newFilter === "trending") setSort("interactions")
-    if (newFilter === "fast") setDifficulty("all")
-    else setDifficulty("beginner")
     setTimeout(() => doFetch("issues"), 0)
   }
 
@@ -118,13 +114,11 @@ export default function DiscoverPage() {
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-12">
         
-        {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <Compass className="w-6 h-6 text-purple-400" />
           <h1 className="text-2xl font-bold tracking-tight">Discover</h1>
         </div>
 
-        {/* Search + Mode */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1">
             <SearchBar onSearch={(q) => doFetch(modeRef.current, q)} loading={searchLoading} placeholder="Search issues..." />
@@ -141,31 +135,19 @@ export default function DiscoverPage() {
           </div>
         </div>
 
-        {/* Quick Filters */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          {QUICK_FILTERS.map(f => {
-            const isActive = activeQuickFilter === f.id
-            return (
-              <button key={f.id} onClick={() => handleQuickFilter(f.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                  isActive ? "bg-white text-zinc-900" : "bg-[#1a1a2e] text-zinc-400 border border-gray-700/50 hover:text-white"
-                }`}>
-                <f.icon className="w-3 h-3" /> {f.label}
-              </button>
-            )
-          })}
+          {QUICK_FILTERS.map(f => (
+            <button key={f.id} onClick={() => handleQuickFilter(f.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                activeQuickFilter === f.id ? "bg-white text-zinc-900" : "bg-[#1a1a2e] text-zinc-400 border border-gray-700/50 hover:text-white"
+              }`}>
+              <f.icon className="w-3 h-3" /> {f.label}
+            </button>
+          ))}
         </div>
 
-        {/* Filters Row */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <LanguageFilter selected={language} onSelect={setLanguage} />
-          {mode === "issues" && (
-            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}
-              className="h-9 px-3 bg-[#1a1a2e] border border-gray-700/50 rounded-lg text-white text-xs focus:outline-none focus:border-purple-500">
-              <option value="beginner">Beginner</option>
-              <option value="all">All Levels</option>
-            </select>
-          )}
           <select value={sort} onChange={(e) => setSort(e.target.value)}
             className="h-9 px-3 bg-[#1a1a2e] border border-gray-700/50 rounded-lg text-white text-xs focus:outline-none focus:border-purple-500">
             <option value="updated">Recently Updated</option>
@@ -173,7 +155,6 @@ export default function DiscoverPage() {
           </select>
         </div>
 
-        {/* Result Count */}
         {!loading && items.length > 0 && (
           <p className="text-sm text-zinc-500 mb-6">
             {items.length.toLocaleString()} {mode === "issues" ? "issues" : "repositories"} found
@@ -181,22 +162,18 @@ export default function DiscoverPage() {
           </p>
         )}
 
-        {/* Loading */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (<RepoCardSkeleton key={i} />))}
           </div>
         )}
 
-        {/* Error */}
         {error && !loading && <ErrorDisplay type="server" message={error} onRetry={() => doFetch(modeRef.current)} />}
 
-        {/* Empty */}
         {hasLoaded && !loading && !error && items.length === 0 && (
           <EmptyState kind="discover" action={{ label: "Clear Filters", onClick: () => { setLanguage(""); setActiveQuickFilter(""); doFetch(modeRef.current) } }} />
         )}
 
-        {/* Results */}
         {!loading && !error && items.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item: any) =>

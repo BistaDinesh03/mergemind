@@ -5,10 +5,11 @@ import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { DashboardSkeleton } from "@/components/Skeletons"
 import { EmptyState } from "@/components/EmptyState"
+import { fetchWithCache } from "@/lib/api"
 import { 
   Sparkles, ArrowRight, Clock, GitMerge, Award, Github, 
-  RefreshCw, Bookmark, Play, CheckCircle, Circle, Compass,
-  Star, Users, FolderGit2, Zap
+  RefreshCw, Bookmark, Play, CheckCircle, Users, Zap, 
+  Compass, FolderGit2
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -22,19 +23,24 @@ export default function DashboardPage() {
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
-  const fetchRecommendation = () => {
+  const fetchRecommendation = async () => {
     if (!username) return
+    const startTime = performance.now()
     setLoading(true)
     setError(null)
-    fetch(API + "/api/recommendations/top?limit=1")
-      .then(r => r.json())
-      .then(d => {
-        if (d?.recommendations?.length > 0) {
-          setRecommendation(d.recommendations[0])
-        }
-      })
-      .catch(err => console.error("Recommendations error:", err))
-      .finally(() => { setLoading(false); setHasLoaded(true) })
+    
+    try {
+      const data = await fetchWithCache(`${API}/api/recommendations/top?limit=1`)
+      if (data?.recommendations?.length > 0) {
+        setRecommendation(data.recommendations[0])
+      }
+      console.log(`Dashboard loaded in ${Math.round(performance.now() - startTime)}ms`)
+    } catch (err) {
+      console.error("Recommendations error:", err)
+    } finally {
+      setLoading(false)
+      setHasLoaded(true)
+    }
   }
 
   useEffect(() => {
@@ -61,7 +67,7 @@ export default function DashboardPage() {
             <Github className="w-8 h-8 text-zinc-500" />
           </div>
           <h1 className="text-2xl font-bold mb-3">Sign in to get started</h1>
-          <p className="text-zinc-400 mb-8 max-w-md">Connect your GitHub account to get personalized issue recommendations matched to your skills.</p>
+          <p className="text-zinc-400 mb-8 max-w-md">Connect your GitHub account to get personalized issue recommendations.</p>
           <button onClick={() => signIn("github")} className="h-12 px-8 bg-white text-zinc-900 rounded-[14px] font-semibold text-base hover:bg-zinc-200 transition-colors">
             Sign in with GitHub
           </button>
@@ -74,13 +80,11 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-4xl mx-auto px-6 py-12 space-y-12 animate-fadeIn">
         
-        {/* Welcome */}
         <div>
           <p className="text-sm text-zinc-500 mb-1">Good morning</p>
           <h1 className="text-3xl font-bold tracking-tight">@{username}</h1>
         </div>
 
-        {/* Featured Recommendation */}
         {recommendation ? (
           <div className="space-y-6">
             <div className="relative overflow-hidden bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-purple-500/5 border border-purple-500/10 rounded-[24px] p-8">
@@ -132,7 +136,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Why This Issue */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { icon: CheckCircle, label: "Beginner Friendly", color: "text-green-400" },
@@ -155,7 +158,6 @@ export default function DashboardPage() {
           />
         ) : null}
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Compass, label: "Browse Issues", href: "/discover", color: "text-purple-400" },
@@ -179,7 +181,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Footer link */}
         <div className="text-center pt-4">
           <Link href="/discover" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
             Browse all issues <ArrowRight className="w-3 h-3 inline" />
