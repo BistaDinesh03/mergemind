@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import random
+import time as time_module
 from datetime import datetime, timezone
 from collections import Counter
 from .github_client import github_client
@@ -20,9 +21,8 @@ BEGINNER_LABELS = [
     "documentation",
 ]
 
-# Global cache for recommendations per user
 _rec_cache: dict = {}
-REC_CACHE_TTL = 120  # 2 minutes
+REC_CACHE_TTL = 120
 
 
 class RecommendationEngine:
@@ -31,7 +31,7 @@ class RecommendationEngine:
         cache_key = f"{username}:{limit}:{language}"
         if cache_key in _rec_cache:
             entry, timestamp = _rec_cache[cache_key]
-            if time.time() - timestamp < REC_CACHE_TTL:
+            if time_module.time() - timestamp < REC_CACHE_TTL:
                 return entry
         
         skill_profile = await self._build_skill_profile(username)
@@ -44,14 +44,58 @@ class RecommendationEngine:
             search_languages = ["python", "javascript"]
         
         all_issues = await self._search_matching_issues(search_languages, limit * 2)
+        
+        # Fallback: if no issues found, search popular languages
+        if not all_issues:
+            logger.info("No personalized issues found, trying fallback languages")
+            fallback_languages = ["python", "javascript", "typescript"]
+            all_issues = await self._search_matching_issues(fallback_languages, limit * 2)
+        
+        # Last resort: fetch trending repos with beginner issues
+        if not all_issues:
+            logger.info("No issues found, using last resort fallback")
+            all_issues = await self._fallback_issues(limit * 2)
+        
         recommendations = await self._score_by_skill_match(all_issues, skill_profile, limit, username)
         
         if len(_rec_cache) > 50:
             oldest = min(_rec_cache, key=lambda k: _rec_cache[k][1])
             del _rec_cache[oldest]
-        _rec_cache[cache_key] = (recommendations, time.time())
+        _rec_cache[cache_key] = (recommendations, time_module.time())
         
         return recommendations
+    
+    async def _fallback_issues(self, limit: int) -> list:
+        """Last resort fallback — fetch popular beginner issues directly."""
+        all_issues = []
+        try:
+            q_parts = [
+                "state:open", "type:issue", "is:public",
+                'label:"good first issue"'
+            ]
+            data = await github_client.request(
+                "https://api.github.com/search/issues",
+                {"q": " ".join(q_parts), "sort": "updated", "order": "desc", "per_page": limit}
+            )
+            if data:
+                for item in data.get("items", []):
+                    if "pull_request" in item:
+                        continue
+                    repo_url = item.get("repository_url", "")
+                    repo_full_name = repo_url.replace("https://api.github.com/repos/", "")
+                    if not repo_full_name:
+                        continue
+                    issue_labels = [l["name"] for l in item.get("labels", [])]
+                    all_issues.append({
+                        "issue": item,
+                        "repo_full_name": repo_full_name,
+                        "labels": issue_labels,
+                        "language": "unknown",
+                        "is_beginner_friendly": True
+                    })
+        except Exception as e:
+            logger.error(f"Fallback search failed: {e}")
+        return all_issues
     
     async def _build_skill_profile(self, username: str) -> dict:
         profile = {
@@ -95,12 +139,6 @@ class RecommendationEngine:
             if lang and lang not in profile["primary_languages"]:
                 starred_langs[lang] += 1
         profile["secondary_languages"] = [lang for lang, _ in starred_langs.most_common(2)]
-        
-        all_topics = []
-        for repo in owned_repos + starred_repos:
-            all_topics.extend(repo.get("topics", [])[:5])
-        topic_counts = Counter(all_topics)
-        profile["topics"] = [t for t, _ in topic_counts.most_common(8)]
         
         profile["total_repos"] = len(owned_repos)
         profile["total_stars"] = sum(r.get("stargazers_count", 0) for r in owned_repos)
@@ -168,7 +206,6 @@ class RecommendationEngine:
     async def _score_by_skill_match(self, issues: list, profile: dict, limit: int, username: str) -> list:
         recommendations = []
         
-        # Fetch all repo data in parallel
         repo_tasks = []
         for item in issues:
             parts = item["repo_full_name"].split("/")
@@ -178,54 +215,42 @@ class RecommendationEngine:
             else:
                 repo_tasks.append(None)
         
-        repo_results = await asyncio.gather(*[t if t else asyncio.sleep(0) for t in repo_tasks], return_exceptions=True)
+        repo_results = await asyncio.gather(
+            *[t if t else asyncio.sleep(0, result=None) for t in repo_tasks],
+            return_exceptions=True
+        )
         
         for i, item in enumerate(issues):
             if len(recommendations) >= limit:
                 break
             
-            repo_data = repo_results[i] if i < len(repo_results) and not isinstance(repo_results[i], Exception) else None
-            if not repo_data:
-                continue
+            repo_data = repo_results[i] if i < len(repo_results) and not isinstance(repo_results[i], Exception) and repo_results[i] is not None else None
             
             issue = item["issue"]
             repo_full_name = item["repo_full_name"]
             issue_labels = item["labels"]
             issue_language = item["language"]
             
-            health = HealthScorer.calculate(repo_data)
-            issue_scoring = IssueScorer.calculate(issue, repo_data)
-            
+            health = HealthScorer.calculate(repo_data) if repo_data else {"overall": 70}
             is_beginner = item["is_beginner_friendly"]
             has_good_first = "good first issue" in [l.lower() for l in issue_labels]
             
-            skill_match_bonus = 0
-            match_reasons = []
-            
-            if issue_language in profile["primary_languages"]:
-                skill_match_bonus += 15
-                match_reasons.append(f"Matches your primary language: {issue_language}")
-            elif issue_language in profile["secondary_languages"]:
-                skill_match_bonus += 8
-            
-            base_score = issue_scoring.get("overall", 75)
-            final_score = min(100, base_score + skill_match_bonus)
+            final_score = 85 if has_good_first else 75 if is_beginner else 60
             
             rec = {
                 "issue_number": issue["number"],
                 "title": issue["title"],
                 "repo": repo_full_name,
-                "repo_stars": repo_data.get("stargazers_count", 0),
+                "repo_stars": repo_data.get("stargazers_count", 0) if repo_data else 0,
                 "labels": issue_labels,
                 "overall_score": final_score,
                 "difficulty_score": 90 if has_good_first else 70 if is_beginner else 50,
                 "merge_chance": 90 if has_good_first else 75 if is_beginner else 60,
                 "beginner_score": 95 if has_good_first else 80 if is_beginner else 40,
-                "repo_health": health.get("overall", 75),
+                "repo_health": health.get("overall", 70),
                 "url": issue["html_url"],
-                "verdict": "Highly Recommended" if final_score >= 80 else "Recommended" if final_score >= 60 else "Worth Considering",
-                "estimated_hours": "1-2h" if has_good_first else "2-4h" if is_beginner else "4-8h",
-                "match_reasons": match_reasons,
+                "verdict": "Highly Recommended" if final_score >= 80 else "Recommended",
+                "estimated_hours": "1-2h" if has_good_first else "2-4h",
                 "reason": ai_service.generate_recommendation_reason(
                     issue["title"], repo_full_name, final_score,
                     "Easy" if has_good_first else "Medium",
