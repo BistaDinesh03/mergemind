@@ -4,7 +4,8 @@ import { useSession, signIn } from "next-auth/react"
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { DashboardSkeleton } from "@/components/Skeletons"
-import { fetchWithCache } from "@/lib/api"
+import { BackendWaking } from "@/components/BackendWaking"
+import { fetchWithCache, waitForBackend } from "@/lib/api"
 import { 
   Sparkles, ArrowRight, Clock, GitMerge, Award, Github, 
   RefreshCw, Bookmark, Play, CheckCircle, Users, Zap, 
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
+  const [backendWaking, setBackendWaking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
@@ -28,6 +30,15 @@ export default function DashboardPage() {
     if (showLoader) setRefreshing(true)
     setLoading(true)
     setError(null)
+    setBackendWaking(false)
+    
+    const backendUp = await waitForBackend()
+    if (!backendUp) {
+      setError("Unable to reach the server. Please try again later.")
+      setLoading(false)
+      setRefreshing(false)
+      return
+    }
     
     try {
       const data = await fetchWithCache(`${API}/api/recommendations/top?limit=1`)
@@ -37,6 +48,16 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("Recommendations error:", err)
+      setBackendWaking(true)
+      const retryUp = await waitForBackend()
+      if (retryUp) {
+        fetchRecommendation(false)
+      } else {
+        setError("Unable to reach the server. Please try again later.")
+        setLoading(false)
+        setRefreshing(false)
+      }
+      return
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -51,6 +72,10 @@ export default function DashboardPage() {
     }
     fetchRecommendation(false)
   }, [status, username])
+
+  if (backendWaking) {
+    return <BackendWaking />
+  }
 
   if (isLoading && !refreshing) {
     return (
@@ -88,7 +113,6 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">@{username}</h1>
         </div>
 
-        {/* Recommendation Section */}
         <div className="space-y-4">
           {refreshing && (
             <div className="flex items-center justify-center gap-2 py-4 text-sm text-zinc-500">
@@ -100,7 +124,6 @@ export default function DashboardPage() {
           {recommendation ? (
             <div className="relative overflow-hidden bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-purple-500/5 border border-purple-500/10 rounded-[24px] p-6">
               <div className="absolute top-0 right-0 w-72 h-72 bg-purple-500/3 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              
               <div className="relative">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -112,13 +135,9 @@ export default function DashboardPage() {
                       <p className="text-sm text-zinc-500">AI-matched to your skills</p>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => fetchRecommendation(true)} 
-                    disabled={refreshing}
-                    className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> 
-                    Find Another
+                  <button onClick={() => fetchRecommendation(true)} disabled={refreshing}
+                    className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                    <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> Find Another
                   </button>
                 </div>
 
@@ -151,9 +170,7 @@ export default function DashboardPage() {
                 </div>
 
                 {timeAgo !== null && (
-                  <p className="text-xs text-zinc-600">
-                    Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}
-                  </p>
+                  <p className="text-xs text-zinc-600">Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}</p>
                 )}
               </div>
             </div>
@@ -161,17 +178,14 @@ export default function DashboardPage() {
             <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-8 text-center">
               <Sparkles className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
               <p className="text-sm text-zinc-400 mb-4">No recommendations available right now.</p>
-              <button 
-                onClick={() => fetchRecommendation(true)}
-                className="h-10 px-6 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors"
-              >
+              <button onClick={() => fetchRecommendation(true)}
+                className="h-10 px-6 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
             </div>
           ) : null}
         </div>
 
-        {/* Why This Issue */}
         {recommendation && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -188,7 +202,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Compass, label: "Browse Issues", href: "/discover", color: "text-purple-400" },
