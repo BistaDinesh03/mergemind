@@ -57,3 +57,13 @@ export async function waitForBackend(): Promise<boolean> {
   checkingBackend = false
   return false
 }
+
+export function warmBackend() {
+  fetch(`${API}/health/live`).then(r => {
+    if (r.ok) backendReady = true
+  }).catch(() => {})
+}
+
+export function isBackendReady(): boolean {
+  return backendReady
+}
