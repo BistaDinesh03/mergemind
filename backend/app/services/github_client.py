@@ -14,7 +14,6 @@ MAX_RETRIES = 3
 RETRY_DELAY = 1.0
 RATE_LIMIT_BUFFER = 10
 
-# In-memory cache with TTL
 _cache: dict = {}
 CACHE_TTL = 300  # 5 minutes
 
@@ -25,6 +24,7 @@ class GitHubClient:
         self._client: Optional[httpx.AsyncClient] = None
         self._rate_limit_remaining = 5000
         self._rate_limit_reset = 0
+        self._last_fetch_time: dict = {}
     
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None:
@@ -54,6 +54,14 @@ class GitHubClient:
             if wait_time > 0:
                 logger.warning(f"Rate limit approaching, waiting {wait_time:.0f}s")
                 time.sleep(min(wait_time, 60))
+    
+    def get_last_fetch_time(self, url: str) -> Optional[str]:
+        """Get the timestamp when this URL was last fetched from GitHub."""
+        cache_key = f"{url}"
+        if cache_key in _cache:
+            _, timestamp = _cache[cache_key]
+            return timestamp
+        return None
     
     async def request(self, url: str, params: dict = None, retries: int = MAX_RETRIES, use_cache: bool = True) -> dict:
         cache_key = f"{url}:{str(params)}"

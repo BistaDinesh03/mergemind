@@ -31,6 +31,7 @@ export default function DiscoverPage() {
   const [language, setLanguage] = useState("")
   const [sort, setSort] = useState("updated")
   const [activeQuickFilter, setActiveQuickFilter] = useState("")
+  const [lastChecked, setLastChecked] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const modeRef = useRef<"issues" | "repos">("issues")
 
@@ -40,8 +41,6 @@ export default function DiscoverPage() {
     abortRef.current = new AbortController()
     if (query) { setSearchLoading(true) } else { setLoading(true) }
     setError(null)
-
-    const startTime = performance.now()
 
     try {
       const params = new URLSearchParams()
@@ -62,7 +61,7 @@ export default function DiscoverPage() {
 
       const data = await fetchWithCache(endpoint)
       setItems(currentMode === "issues" ? (data.issues || []) : (data.repositories || []))
-      console.log(`Discover loaded in ${Math.round(performance.now() - startTime)}ms`)
+      if (data.last_checked) setLastChecked(data.last_checked)
     } catch (err: any) {
       if (err.name === "AbortError") return
       setError(err.message)
@@ -108,6 +107,10 @@ export default function DiscoverPage() {
       </div>
     )
   }
+
+  const lastCheckedText = lastChecked
+    ? `Last checked: ${Math.max(0, Math.floor((Date.now() - new Date(lastChecked).getTime()) / 60000))} min ago`
+    : ""
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
@@ -155,12 +158,17 @@ export default function DiscoverPage() {
           </select>
         </div>
 
-        {!loading && items.length > 0 && (
-          <p className="text-sm text-zinc-500 mb-6">
-            {items.length.toLocaleString()} {mode === "issues" ? "issues" : "repositories"} found
-            {language && <> in {language}</>}
-          </p>
-        )}
+        <div className="flex items-center justify-between mb-6">
+          {!loading && items.length > 0 ? (
+            <p className="text-sm text-zinc-500">
+              {items.length.toLocaleString()} {mode === "issues" ? "issues" : "repositories"} found
+              {language && <> in {language}</>}
+            </p>
+          ) : <div />}
+          {lastCheckedText && !loading && (
+            <p className="text-xs text-zinc-600">{lastCheckedText}</p>
+          )}
+        </div>
 
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
