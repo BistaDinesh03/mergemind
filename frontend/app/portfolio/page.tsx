@@ -9,7 +9,7 @@ import Link from "next/link"
 import { 
   Github, Star, Users, GitFork, ExternalLink, 
   MapPin, Building2, Link2, ArrowUpRight,
-  CheckCircle, Trophy, Globe, Target, Code, Award, GitMerge
+  CheckCircle, Trophy, Globe, Target, Code, GitMerge
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -17,7 +17,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 export default function PortfolioPage() {
   const { data: session, status } = useSession()
   const [data, setData] = useState<any>(null)
-  const [progress, setProgress] = useState<any>(null)
+  const [progress, setProgress] = useState({ viewed: 0, saved: 0, started: 0, completed: 0, merged_prs: 0, open_prs: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const username = session?.user?.login || session?.user?.name || null
@@ -28,20 +28,30 @@ export default function PortfolioPage() {
       setLoading(false)
       return
     }
+    
     setLoading(true)
     setError(null)
     
-    Promise.all([
-      fetchWithCache(`${API}/api/portfolio/${username}`),
-      fetchWithCache(`${API}/api/history/progress`)
-    ])
-      .then(([portfolioData, progressData]) => {
-        if (portfolioData?.error) throw new Error(portfolioData.error)
-        setData(portfolioData)
-        if (progressData?.progress) setProgress(progressData.progress)
+    // Fetch portfolio FIRST — public endpoint, works without session
+    fetchWithCache(`${API}/api/portfolio/${username}`)
+      .then(d => {
+        if (d?.error) throw new Error(d.error)
+        setData(d)
       })
-      .catch(err => setError(err.message || "Failed to load portfolio"))
+      .catch(err => {
+        console.error("[Portfolio] Failed to load:", err.message)
+        setError(err.message || "Could not load portfolio")
+      })
       .finally(() => setLoading(false))
+    
+    // Fetch progress SEPARATELY — may fail due to cross-origin session, don't block portfolio
+    fetchWithCache(`${API}/api/history/progress`)
+      .then(d => {
+        if (d?.progress) setProgress(d.progress)
+      })
+      .catch(err => {
+        console.warn("[Portfolio] Progress unavailable:", err.message)
+      })
   }, [status, username])
 
   if (loading) {
@@ -58,7 +68,7 @@ export default function PortfolioPage() {
         <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
           <Github className="w-16 h-16 text-zinc-500 mb-6" />
           <h1 className="text-2xl font-bold mb-3">Sign in to view your portfolio</h1>
-          <p className="text-zinc-400 mb-8">Connect your GitHub account to see your developer profile.</p>
+          <p className="text-zinc-400 mb-8">Connect GitHub to see your developer profile.</p>
           <button onClick={() => signIn("github")} className="h-12 px-8 bg-white text-zinc-900 rounded-[14px] font-semibold hover:bg-zinc-200 transition-colors">
             Sign in with GitHub
           </button>
@@ -71,7 +81,12 @@ export default function PortfolioPage() {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex items-center justify-center py-32">
-          <EmptyState kind="error" title="Could not load portfolio" action={{ label: "Try Again", onClick: () => window.location.reload() }} />
+          <EmptyState 
+            kind="error" 
+            title="Could not load portfolio" 
+            description={error || "An unexpected error occurred"} 
+            action={{ label: "Try Again", onClick: () => window.location.reload() }} 
+          />
         </div>
       </div>
     )
@@ -81,13 +96,11 @@ export default function PortfolioPage() {
   const languages = [...new Set(repos.map((r: any) => r.language).filter(Boolean))]
   const totalStars = repos.reduce((s: number, r: any) => s + (r.stars || 0), 0)
   const contributions = data.contributions || {}
-  const p = progress || { viewed: 0, saved: 0, started: 0, completed: 0, merged_prs: 0, open_prs: 0, total_recommendations: 0 }
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-12 animate-fadeIn">
         
-        {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <img src={data.avatar || ""} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
             className="w-24 h-24 rounded-full ring-2 ring-[#27272a] flex-shrink-0 bg-[#18181b]" />
@@ -103,18 +116,16 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Contribution Journey — Real PR data */}
         <section className="bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/10 rounded-[24px] p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-purple-400" /> Contribution Journey
           </h2>
-          
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { icon: Target, label: "Viewed", value: p.viewed, color: "text-zinc-400" },
-              { icon: Code, label: "Started", value: p.started, color: "text-blue-400" },
-              { icon: GitMerge, label: "Open PRs", value: p.open_prs, color: "text-yellow-400" },
-              { icon: CheckCircle, label: "Merged PRs", value: p.merged_prs, color: "text-green-400" },
+              { icon: Target, label: "Viewed", value: progress.viewed, color: "text-zinc-400" },
+              { icon: Code, label: "Started", value: progress.started, color: "text-blue-400" },
+              { icon: GitMerge, label: "Open PRs", value: progress.open_prs, color: "text-yellow-400" },
+              { icon: CheckCircle, label: "Merged PRs", value: progress.merged_prs, color: "text-green-400" },
             ].map(stat => (
               <div key={stat.label} className="bg-[#18181b] border border-[#27272a] rounded-[16px] p-4 text-center">
                 <stat.icon className={`w-5 h-5 ${stat.color} mx-auto mb-2`} />
@@ -124,20 +135,19 @@ export default function PortfolioPage() {
             ))}
           </div>
 
-          {p.merged_prs === 0 && p.open_prs === 0 && (
+          {progress.merged_prs === 0 && progress.open_prs === 0 && (
             <p className="text-sm text-zinc-500">
-              Start contributing through <Link href="/discover" className="text-purple-400 hover:text-purple-300">Discover</Link> — your PRs will appear here automatically.
+              No merged contributions yet. Start through <Link href="/discover" className="text-purple-400 hover:text-purple-300">Discover</Link> — your PRs will appear here automatically.
             </p>
           )}
           
-          {p.merged_prs > 0 && (
+          {progress.merged_prs > 0 && (
             <p className="text-sm text-green-400 flex items-center gap-2">
-              <CheckCircle className="w-4 h-4" /> {p.merged_prs} pull request{p.merged_prs > 1 ? "s" : ""} merged — proof of your open source work!
+              <CheckCircle className="w-4 h-4" /> {progress.merged_prs} merged PR{progress.merged_prs > 1 ? "s" : ""} — proof of your open source work!
             </p>
           )}
         </section>
 
-        {/* GitHub Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: GitFork, label: "Repositories", value: data.public_repos || 0, color: "text-blue-400" },
@@ -153,7 +163,6 @@ export default function PortfolioPage() {
           ))}
         </div>
 
-        {/* Technologies */}
         {languages.length > 0 && (
           <section>
             <h2 className="text-lg font-bold mb-4">Technologies</h2>
@@ -167,8 +176,7 @@ export default function PortfolioPage() {
           </section>
         )}
 
-        {/* Featured Projects */}
-        {repos.length > 0 && (
+        {repos.length > 0 ? (
           <section>
             <h2 className="text-lg font-bold mb-4">Featured Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -190,6 +198,15 @@ export default function PortfolioPage() {
                 </a>
               ))}
             </div>
+          </section>
+        ) : (
+          <section>
+            <EmptyState 
+              kind="portfolio" 
+              title="No repositories found" 
+              description="Your GitHub repositories will appear here once they're public." 
+              action={{ label: "Browse Issues", href: "/discover" }} 
+            />
           </section>
         )}
 
