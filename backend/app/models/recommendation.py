@@ -26,10 +26,15 @@ class RecommendationHistory(Base):
     was_clicked = Column(Boolean, default=False)
     was_contributed = Column(Boolean, default=False)
     
+    # Contribution guide progress tracking
+    current_step = Column(Integer, default=0)
+    total_steps = Column(Integer, default=8)
+    completed_steps = Column(JSON, default=list)
+    
     # Real GitHub PR tracking
     pr_url = Column(String(500))
     pr_number = Column(Integer)
-    pr_status = Column(String(20))  # open, closed, merged
+    pr_status = Column(String(20))
     pr_merged = Column(Boolean, default=False)
     pr_merged_at = Column(DateTime)
     
