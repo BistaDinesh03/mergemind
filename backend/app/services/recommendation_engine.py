@@ -18,7 +18,6 @@ BEGINNER_LABELS = ["good first issue", "help wanted", "beginner", "easy", "docum
 _rec_cache: dict = {}
 REC_CACHE_TTL = 300
 
-# Framework detection from repo topics and languages
 FRAMEWORK_KEYWORDS = {
     "fastapi": ["fastapi", "fast-api"],
     "django": ["django"],
@@ -42,20 +41,6 @@ FRAMEWORK_KEYWORDS = {
     "jest": ["jest"],
     "typescript": ["typescript"],
     "tailwindcss": ["tailwind", "tailwindcss"],
-}
-
-# Framework categories for easier matching
-FRAMEWORK_CATEGORIES = {
-    "python": ["fastapi", "django", "flask", "pytest"],
-    "javascript": ["react", "vue", "angular", "node", "express", "jest"],
-    "typescript": ["react", "vue", "angular", "node", "next.js", "typescript"],
-    "go": ["docker", "kubernetes"],
-    "java": ["spring"],
-    "ruby": ["rails"],
-    "devops": ["docker", "kubernetes", "aws", "redis"],
-    "database": ["postgresql", "mongodb", "redis"],
-    "frontend": ["react", "vue", "angular", "next.js", "tailwindcss"],
-    "backend": ["fastapi", "django", "flask", "express", "spring", "rails", "node"],
 }
 
 
@@ -149,7 +134,6 @@ class RecommendationEngine:
         starred_repos = await github_client.request(f"https://api.github.com/users/{username}/starred", params={"per_page": 20})
         starred_repos = starred_repos or []
         
-        # Extract languages
         lang_weight = {}
         for repo in owned_repos:
             lang = repo.get("language")
@@ -159,7 +143,6 @@ class RecommendationEngine:
         sorted_langs = sorted(lang_weight.items(), key=lambda x: x[1], reverse=True)
         profile["primary_languages"] = [lang for lang, _ in sorted_langs[:3]]
         
-        # Extract frameworks from repo topics
         framework_counts = Counter()
         for repo in owned_repos + starred_repos:
             topics = [t.lower() for t in repo.get("topics", [])]
@@ -169,13 +152,6 @@ class RecommendationEngine:
                         framework_counts[framework] += 1
         
         profile["frameworks"] = [fw for fw, _ in framework_counts.most_common(8)]
-        
-        # Extract all topics
-        all_topics = []
-        for repo in owned_repos + starred_repos:
-            all_topics.extend([t.lower() for t in repo.get("topics", [])[:5]])
-        topic_counts = Counter(all_topics)
-        profile["topics"] = [t for t, _ in topic_counts.most_common(10)]
         
         profile["total_repos"] = len(owned_repos)
         profile["total_stars"] = sum(r.get("stargazers_count", 0) for r in owned_repos)
@@ -235,11 +211,9 @@ class RecommendationEngine:
             
             if issue_language in profile["primary_languages"]:
                 match_reasons.append(f"Matches your primary language: {issue_language}")
-                match_reasons.append(f"{issue_language}")
             elif issue_language in profile["secondary_languages"]:
                 match_reasons.append(f"Matches your interest: {issue_language}")
             
-            # Check repo topics for framework overlaps
             repo_topics = [t.lower() for t in (repo_data.get("topics", []) if repo_data else [])]
             for topic in repo_topics:
                 for framework, keywords in FRAMEWORK_KEYWORDS.items():
@@ -262,9 +236,49 @@ class RecommendationEngine:
                 elif stars > 100:
                     match_reasons.append(f"Active repo ({stars:,} stars)")
             
-            final_score = 85 if has_good_first else 75 if is_beginner else 60
+            # Calculate individual factor scores
+            skill_match = 95 if issue_language in profile["primary_languages"] else 70 if issue_language in profile["secondary_languages"] else 40
             if matched_frameworks:
-                final_score = min(100, final_score + 5)
+                skill_match = min(100, skill_match + 5)
+            
+            difficulty_score = 90 if has_good_first else 70 if is_beginner else 50
+            
+            repo_health_score = HealthScorer.calculate(repo_data).get("overall", 70) if repo_data else 65
+            
+            freshness_score = 80
+            if repo_data and repo_data.get("pushed_at"):
+                from datetime import datetime as dt
+                try:
+                    pushed = dt.fromisoformat(repo_data["pushed_at"].replace("Z", "+00:00"))
+                    days = (dt.now(timezone.utc) - pushed).days
+                    if days < 7: freshness_score = 95
+                    elif days < 30: freshness_score = 80
+                    elif days < 90: freshness_score = 60
+                    else: freshness_score = 40
+                except: pass
+            
+            clarity_score = 70
+            if issue.get("body") and len(issue.get("body", "")) > 100:
+                clarity_score = 90
+            elif issue.get("body") and len(issue.get("body", "")) > 20:
+                clarity_score = 75
+            
+            # Weighted final score
+            final_score = round(
+                skill_match * 0.30 +
+                difficulty_score * 0.25 +
+                repo_health_score * 0.20 +
+                clarity_score * 0.15 +
+                freshness_score * 0.10
+            )
+            
+            score_breakdown = {
+                "skill_match": {"score": skill_match, "label": "Skill Match", "weight": "30%"},
+                "difficulty": {"score": difficulty_score, "label": "Difficulty", "weight": "25%"},
+                "repo_health": {"score": repo_health_score, "label": "Repository Health", "weight": "20%"},
+                "clarity": {"score": clarity_score, "label": "Issue Clarity", "weight": "15%"},
+                "freshness": {"score": freshness_score, "label": "Freshness", "weight": "10%"},
+            }
             
             rec = {
                 "issue_number": issue["number"],
@@ -273,15 +287,16 @@ class RecommendationEngine:
                 "repo_stars": repo_data.get("stargazers_count", 0) if repo_data else 0,
                 "labels": issue_labels,
                 "overall_score": final_score,
-                "difficulty_score": 90 if has_good_first else 70,
-                "merge_chance": 90 if has_good_first else 75,
-                "beginner_score": 95 if has_good_first else 80,
-                "repo_health": 70,
+                "difficulty_score": difficulty_score,
+                "merge_chance": 90 if has_good_first else 75 if is_beginner else 60,
+                "beginner_score": 95 if has_good_first else 80 if is_beginner else 40,
+                "repo_health": repo_health_score,
                 "url": issue["html_url"],
-                "verdict": "Highly Recommended" if final_score >= 80 else "Recommended",
-                "estimated_hours": "1-2h" if has_good_first else "2-4h",
+                "verdict": "Great opportunity for you" if final_score >= 80 else "Good opportunity" if final_score >= 60 else "Worth considering",
+                "estimated_hours": "1-2h" if has_good_first else "2-4h" if is_beginner else "4-8h",
                 "match_reasons": match_reasons,
                 "matched_frameworks": matched_frameworks,
+                "score_breakdown": score_breakdown,
                 "reason": ai_service.generate_recommendation_reason(issue["title"], repo_full_name, final_score, "Easy" if has_good_first else "Medium", issue_labels)
             }
             recommendations.append(rec)

@@ -8,8 +8,8 @@ import { BackendWaking } from "@/components/BackendWaking"
 import { fetchWithCache, waitForBackend } from "@/lib/api"
 import { 
   Sparkles, ArrowRight, Clock, GitMerge, Award, Github, 
-  RefreshCw, Bookmark, Play, CheckCircle, Users, Zap, 
-  Compass, FolderGit2, Loader2, Target
+  RefreshCw, Bookmark, Play, CheckCircle, Compass, 
+  FolderGit2, Loader2, Target, ChevronDown, TrendingUp
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -32,7 +32,14 @@ const FALLBACK_ISSUE = {
   labels: ["good first issue", "documentation"],
   match_reasons: ["Perfect first contribution", "No coding required", "Takes less than 30 minutes"],
   matched_frameworks: [],
-  reason: "The perfect first pull request — add your name to the contributors list. No coding required, takes less than 30 minutes."
+  score_breakdown: {
+    skill_match: { score: 95, label: "Skill Match", weight: "30%" },
+    difficulty: { score: 98, label: "Difficulty", weight: "25%" },
+    repo_health: { score: 90, label: "Repository Health", weight: "20%" },
+    clarity: { score: 95, label: "Issue Clarity", weight: "15%" },
+    freshness: { score: 85, label: "Freshness", weight: "10%" },
+  },
+  reason: "The perfect first pull request — add your name to the contributors list."
 }
 
 export default function DashboardPage() {
@@ -42,7 +49,7 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)
   const [backendWaking, setBackendWaking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
@@ -50,7 +57,6 @@ export default function DashboardPage() {
     if (!username) return
     if (showLoader) setRefreshing(true)
     setLoading(true)
-    setError(null)
     setBackendWaking(false)
     
     const backendUp = await waitForBackend()
@@ -87,26 +93,20 @@ export default function DashboardPage() {
     fetchRecommendation(false)
   }, [status, username])
 
-  if (backendWaking) {
-    return <BackendWaking />
-  }
+  if (backendWaking) return <BackendWaking />
 
   if (isLoading && !refreshing) {
-    return (
-      <div className="min-h-screen bg-[#09090b]"><Navbar /><DashboardSkeleton /></div>
-    )
+    return <div className="min-h-screen bg-[#09090b]"><Navbar /><DashboardSkeleton /></div>
   }
 
   if (status === "unauthenticated") {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-6">
-            <Github className="w-8 h-8 text-zinc-500" />
-          </div>
+          <Github className="w-16 h-16 text-zinc-500 mb-6" />
           <h1 className="text-2xl font-bold mb-3">Sign in to get started</h1>
-          <p className="text-zinc-400 mb-8 max-w-md">Connect your GitHub account to get personalized issue recommendations.</p>
-          <button onClick={() => signIn("github")} className="h-12 px-8 bg-white text-zinc-900 rounded-[14px] font-semibold text-base hover:bg-zinc-200 transition-colors">
+          <p className="text-zinc-400 mb-8">Connect GitHub to get personalized issue recommendations.</p>
+          <button onClick={() => signIn("github")} className="h-12 px-8 bg-white text-zinc-900 rounded-[14px] font-semibold hover:bg-zinc-200 transition-colors">
             Sign in with GitHub
           </button>
         </div>
@@ -116,6 +116,7 @@ export default function DashboardPage() {
 
   const greeting = getGreeting()
   const timeAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null
+  const breakdown = recommendation?.score_breakdown || {}
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -144,7 +145,7 @@ export default function DashboardPage() {
                       <Sparkles className="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
-                      <p className="font-semibold">Your next contribution</p>
+                      <p className="font-semibold">{recommendation.verdict || "Your next contribution"}</p>
                       <p className="text-sm text-zinc-500">AI-matched to your skills</p>
                     </div>
                   </div>
@@ -167,12 +168,42 @@ export default function DashboardPage() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded-full text-sm font-medium">
                     <Award className="w-3.5 h-3.5" /> {recommendation.overall_score || 90}/100
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-full text-sm font-medium">
-                    <GitMerge className="w-3.5 h-3.5" /> {recommendation.merge_chance || 90}% merge
-                  </span>
+                  <button 
+                    onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a2e] border border-[#27272a] rounded-full text-sm text-zinc-400 hover:text-white transition-colors"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" /> Why this score
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showScoreBreakdown ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
 
-                {/* Why This Matches — NEW */}
+                {/* Score Breakdown */}
+                {showScoreBreakdown && Object.keys(breakdown).length > 0 && (
+                  <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px] animate-fadeIn">
+                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+                      Opportunity Score Breakdown
+                    </p>
+                    <div className="space-y-2">
+                      {Object.values(breakdown).map((factor: any, i: number) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-xs text-zinc-400 w-32 flex-shrink-0">{factor.label}</span>
+                          <div className="flex-1 h-1.5 bg-[#27272a] rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                factor.score >= 80 ? "bg-green-500" : factor.score >= 60 ? "bg-blue-500" : "bg-yellow-500"
+                              }`}
+                              style={{ width: `${factor.score}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium w-8 text-right flex-shrink-0">{factor.score}</span>
+                          <span className="text-[10px] text-zinc-600 w-10 text-right flex-shrink-0">{factor.weight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Why This Matches */}
                 {recommendation.match_reasons && recommendation.match_reasons.length > 0 && (
                   <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px]">
                     <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -195,13 +226,6 @@ export default function DashboardPage() {
                         ))}
                       </div>
                     )}
-                  </div>
-                )}
-
-                {recommendation.reason && (
-                  <div className="flex items-start gap-2 mb-5 p-3 bg-purple-500/5 border border-purple-500/10 rounded-[14px]">
-                    <Sparkles className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-zinc-400 leading-relaxed">{recommendation.reason}</p>
                   </div>
                 )}
 
