@@ -40,7 +40,12 @@ export default function ContributionGuidePage() {
       signal: timeoutController.signal
     })
       .then(r => {
-        if (!r.ok) throw new Error(`Server returned ${r.status}`)
+        if (!r.ok) {
+          if (r.status === 404) {
+            throw new Error("This issue or repository may have been closed or removed.")
+          }
+          throw new Error(`Server returned ${r.status}`)
+        }
         return r.json()
       })
       .then(d => {
@@ -51,6 +56,9 @@ export default function ContributionGuidePage() {
         if (err.name === "AbortError") {
           console.error("[Contribute] Request timed out after 25s")
           setError("The server is taking too long to respond. It may be waking up — please try again.")
+        } else if (err.message.includes("closed or removed")) {
+          console.warn("[Contribute] Issue/repo not found:", err.message)
+          setError("This issue or repository may have been closed or removed. Try browsing other issues instead.")
         } else {
           console.error("[Contribute] Failed to load guide:", err.message)
           setError(err.message || "Could not load the contribution guide")
@@ -106,12 +114,15 @@ export default function ContributionGuidePage() {
         <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
           <AlertCircle className="w-10 h-10 text-red-400 mb-4" />
           <h1 className="text-xl font-bold mb-2">Could not load the contribution guide</h1>
-          <p className="text-zinc-400 mb-6">{error || "An unexpected error occurred"}</p>
-          <div className="flex gap-3">
+          <p className="text-zinc-400 mb-6 max-w-md">{error || "An unexpected error occurred"}</p>
+          <div className="flex flex-col sm:flex-row gap-3">
             <button onClick={() => window.location.reload()} className="h-10 px-6 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold hover:bg-zinc-200 transition-colors">
               Try Again
             </button>
-            <Link href={`/repo/${owner}/${repo}`} className="h-10 px-6 bg-[#18181b] border border-[#27272a] rounded-[14px] text-sm text-zinc-400 hover:text-white transition-colors inline-flex items-center">
+            <Link href="/discover" className="h-10 px-6 bg-[#18181b] border border-[#27272a] rounded-[14px] text-sm text-zinc-400 hover:text-white transition-colors inline-flex items-center justify-center">
+              Browse Other Issues
+            </Link>
+            <Link href={`/repo/${owner}/${repo}`} className="h-10 px-6 bg-[#18181b] border border-[#27272a] rounded-[14px] text-sm text-zinc-400 hover:text-white transition-colors inline-flex items-center justify-center">
               Back to Repository
             </Link>
           </div>
@@ -120,11 +131,29 @@ export default function ContributionGuidePage() {
     )
   }
 
-  const g = guide.guide
+  const g = guide.guide || {}
   const repoSetup = guide.repo_setup || {}
   const relatedPRs = guide.related_prs || []
-  const totalSteps = g.steps?.length || 8
-  const progressPercent = Math.round((completedSteps.length / totalSteps) * 100)
+  const steps = g.steps || []
+  const totalSteps = steps.length || 8
+  const progressPercent = steps.length > 0 ? Math.round((completedSteps.length / totalSteps) * 100) : 0
+
+  if (steps.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
+        <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
+          <GitMerge className="w-10 h-10 text-zinc-600 mb-4" />
+          <h1 className="text-xl font-bold mb-2">No contribution guide available</h1>
+          <p className="text-zinc-400 mb-6 max-w-md">
+            {guide.ai_summary || "This issue may have been closed or the repository doesn't have a contribution guide."}
+          </p>
+          <Link href="/discover" className="h-10 px-6 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold hover:bg-zinc-200 transition-colors inline-flex items-center justify-center">
+            Browse Other Issues
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
@@ -140,23 +169,25 @@ export default function ContributionGuidePage() {
         </div>
 
         <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-[24px] p-6">
-          <h1 className="text-2xl font-bold mb-2">{guide.issue.title}</h1>
-          <p className="text-zinc-400 mb-4">{guide.repository}#{guide.issue.number}</p>
+          <h1 className="text-2xl font-bold mb-2">{guide.issue?.title || "Issue"}</h1>
+          <p className="text-zinc-400 mb-4">{guide.repository}#{guide.issue?.number}</p>
           <div className="flex flex-wrap gap-2 mb-4">
-            {guide.issue.labels?.map((l: string) => (
+            {guide.issue?.labels?.map((l: string) => (
               <span key={l} className="px-2.5 py-1 text-xs bg-purple-500/10 text-purple-300 rounded-full">{l}</span>
             ))}
           </div>
           <div className="flex flex-wrap gap-3 text-sm">
-            <span className="text-green-400"><Clock className="w-4 h-4 inline mr-1" />{g.estimated_time}</span>
-            <span className="text-blue-400"><BarChart3 className="w-4 h-4 inline mr-1" />{g.difficulty}</span>
+            <span className="text-green-400"><Clock className="w-4 h-4 inline mr-1" />{g.estimated_time || "Unknown"}</span>
+            <span className="text-blue-400"><BarChart3 className="w-4 h-4 inline mr-1" />{g.difficulty || "Unknown"}</span>
           </div>
         </div>
 
-        <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
-          <h2 className="text-lg font-bold mb-3 flex items-center gap-2"><Sparkles className="w-5 h-5 text-purple-400" /> What You Need to Do</h2>
-          <p className="text-zinc-400 leading-relaxed">{guide.ai_summary}</p>
-        </div>
+        {guide.ai_summary && (
+          <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
+            <h2 className="text-lg font-bold mb-3 flex items-center gap-2"><Sparkles className="w-5 h-5 text-purple-400" /> What You Need to Do</h2>
+            <p className="text-zinc-400 leading-relaxed">{guide.ai_summary}</p>
+          </div>
+        )}
 
         {repoSetup && (repoSetup.package_manager || repoSetup.has_contributing || repoSetup.has_docker) && (
           <div className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
@@ -206,7 +237,7 @@ export default function ContributionGuidePage() {
 
         <div className="space-y-3">
           <h2 className="text-xl font-bold flex items-center gap-2"><Terminal className="w-5 h-5 text-green-400" /> Step-by-Step Guide</h2>
-          {g.steps?.map((step: any) => {
+          {steps.map((step: any) => {
             const isCompleted = completedSteps.includes(step.step)
             const isCurrent = step.step === currentStep
             return (
@@ -254,17 +285,20 @@ export default function ContributionGuidePage() {
           })}
         </div>
 
-        <div className="bg-[#18181b] border border-green-500/20 rounded-[20px] p-6">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" /> PR Checklist</h2>
-          <div className="space-y-2">
-            {g.pull_request_checklist?.map((item: string, i: number) => (
-              <p key={i} className="text-sm text-zinc-400 flex items-center gap-2"><span className="text-green-400">✓</span> {item}</p>
-            ))}
+        {g.pull_request_checklist && g.pull_request_checklist.length > 0 && (
+          <div className="bg-[#18181b] border border-green-500/20 rounded-[20px] p-6">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" /> PR Checklist</h2>
+            <div className="space-y-2">
+              {g.pull_request_checklist.map((item: string, i: number) => (
+                <p key={i} className="text-sm text-zinc-400 flex items-center gap-2"><span className="text-green-400">✓</span> {item}</p>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="text-center pb-8">
-          <a href={guide.issue.url} target="_blank" rel="noopener noreferrer" className="h-11 px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
+          <a href={guide.issue?.url || `https://github.com/${owner}/${repo}/issues/${issueNumber}`} target="_blank" rel="noopener noreferrer" 
+            className="h-11 px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
             Open on GitHub <ExternalLink className="w-4 h-4" />
           </a>
         </div>

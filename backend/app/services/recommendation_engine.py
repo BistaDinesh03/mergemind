@@ -1,4 +1,4 @@
-"""Recommendation engine — personalized to user's real GitHub skills with caching."""
+"""Recommendation engine — personalized with caching, exclusion, and rotation."""
 import asyncio
 import logging
 import random
@@ -46,29 +46,24 @@ FRAMEWORK_KEYWORDS = {
 
 class RecommendationEngine:
 
-    async def get_recommendations(self, username: str = None, limit: int = 5, language: str = None) -> list[dict]:
-        cache_key = f"{username}:{limit}:{language}"
+    async def get_recommendations(
+        self,
+        username: str = None,
+        limit: int = 5,
+        language: str = None,
+        exclude_issue_id: int = None
+    ) -> list[dict]:
+        """
+        Get personalized recommendations.
+        If exclude_issue_id provided, returns DIFFERENT issues than the excluded one.
+        """
+        cache_key = f"{username}:{limit}:{language}:exclude:{exclude_issue_id}"
         
         if cache_key in _rec_cache:
             entry, timestamp, _ = _rec_cache[cache_key]
-            age = time_module.time() - timestamp
-            if age < REC_CACHE_TTL:
+            if time_module.time() - timestamp < REC_CACHE_TTL:
                 return entry
         
-        if cache_key in _rec_cache:
-            entry, timestamp, _ = _rec_cache[cache_key]
-            asyncio.create_task(self._background_refresh(username, limit, language, cache_key))
-            return entry
-        
-        return await self._fetch_and_cache(username, limit, language, cache_key)
-    
-    async def _background_refresh(self, username: str, limit: int, language: str, cache_key: str):
-        try:
-            await self._fetch_and_cache(username, limit, language, cache_key)
-        except Exception as e:
-            logger.warning(f"Background refresh failed: {e}")
-    
-    async def _fetch_and_cache(self, username: str, limit: int, language: str, cache_key: str) -> list[dict]:
         skill_profile = await self._build_skill_profile(username)
         
         if language:
@@ -78,13 +73,24 @@ class RecommendationEngine:
         else:
             search_languages = ["python", "javascript"]
         
-        all_issues = await self._search_matching_issues(search_languages, limit * 2)
+        all_issues = await self._search_matching_issues(search_languages, limit * 4)
         
         if not all_issues:
-            all_issues = await self._search_matching_issues(["python", "javascript", "typescript"], limit * 2)
+            all_issues = await self._search_matching_issues(["python", "javascript", "typescript"], limit * 4)
         
         if not all_issues:
-            all_issues = await self._fallback_issues(limit * 2)
+            all_issues = await self._fallback_issues(limit * 4)
+        
+        # Exclude the specified issue
+        if exclude_issue_id:
+            all_issues = [
+                i for i in all_issues
+                if i["issue"].get("number") != exclude_issue_id
+                and i["issue"].get("id") != exclude_issue_id
+            ]
+        
+        # Shuffle for randomness so every fetch gives different order
+        random.shuffle(all_issues)
         
         recommendations = await self._score_by_skill_match(all_issues, skill_profile, limit, username)
         
@@ -105,12 +111,20 @@ class RecommendationEngine:
             )
             if data:
                 for item in data.get("items", []):
-                    if "pull_request" in item: continue
+                    if "pull_request" in item:
+                        continue
                     repo_url = item.get("repository_url", "")
                     repo_full_name = repo_url.replace("https://api.github.com/repos/", "")
-                    if not repo_full_name: continue
+                    if not repo_full_name:
+                        continue
                     issue_labels = [l["name"] for l in item.get("labels", [])]
-                    all_issues.append({"issue": item, "repo_full_name": repo_full_name, "labels": issue_labels, "language": "unknown", "is_beginner_friendly": True})
+                    all_issues.append({
+                        "issue": item,
+                        "repo_full_name": repo_full_name,
+                        "labels": issue_labels,
+                        "language": "unknown",
+                        "is_beginner_friendly": True
+                    })
         except Exception as e:
             logger.error(f"Fallback search failed: {e}")
         return all_issues
@@ -128,10 +142,16 @@ class RecommendationEngine:
         if not username:
             return profile
         
-        owned_repos = await github_client.request(f"https://api.github.com/users/{username}/repos", params={"sort": "updated", "per_page": 30, "type": "owner"})
+        owned_repos = await github_client.request(
+            f"https://api.github.com/users/{username}/repos",
+            params={"sort": "updated", "per_page": 30, "type": "owner"}
+        )
         owned_repos = owned_repos or []
         
-        starred_repos = await github_client.request(f"https://api.github.com/users/{username}/starred", params={"per_page": 20})
+        starred_repos = await github_client.request(
+            f"https://api.github.com/users/{username}/starred",
+            params={"per_page": 20}
+        )
         starred_repos = starred_repos or []
         
         lang_weight = {}
@@ -155,30 +175,48 @@ class RecommendationEngine:
         
         profile["total_repos"] = len(owned_repos)
         profile["total_stars"] = sum(r.get("stargazers_count", 0) for r in owned_repos)
-        if profile["total_repos"] >= 30: profile["experience_level"] = "advanced"
-        elif profile["total_repos"] >= 10: profile["experience_level"] = "intermediate"
+        if profile["total_repos"] >= 30:
+            profile["experience_level"] = "advanced"
+        elif profile["total_repos"] >= 10:
+            profile["experience_level"] = "intermediate"
         
         return profile
     
     async def _search_matching_issues(self, languages: list, limit: int) -> list:
         all_issues = []
         for lang in languages[:2]:
-            if len(all_issues) >= limit: break
+            if len(all_issues) >= limit:
+                break
             for label in BEGINNER_LABELS[:2]:
-                if len(all_issues) >= limit: break
+                if len(all_issues) >= limit:
+                    break
                 try:
                     q_parts = ["state:open", "type:issue", "is:public", f'label:"{label}"', f"language:{lang}"]
-                    data = await github_client.request("https://api.github.com/search/issues", {"q": " ".join(q_parts), "sort": "updated", "order": "desc", "per_page": 5})
-                    if not data: continue
+                    data = await github_client.request(
+                        "https://api.github.com/search/issues",
+                        {"q": " ".join(q_parts), "sort": "updated", "order": "desc", "per_page": 5}
+                    )
+                    if not data:
+                        continue
                     for item in data.get("items", []):
-                        if "pull_request" in item: continue
-                        if len(all_issues) >= limit: break
+                        if "pull_request" in item:
+                            continue
+                        if len(all_issues) >= limit:
+                            break
                         repo_url = item.get("repository_url", "")
                         repo_full_name = repo_url.replace("https://api.github.com/repos/", "")
-                        if not repo_full_name: continue
+                        if not repo_full_name:
+                            continue
                         issue_labels = [l["name"] for l in item.get("labels", [])]
-                        all_issues.append({"issue": item, "repo_full_name": repo_full_name, "labels": issue_labels, "language": lang, "is_beginner_friendly": any(l.lower() in BEGINNER_LABELS for l in issue_labels)})
-                except Exception: continue
+                        all_issues.append({
+                            "issue": item,
+                            "repo_full_name": repo_full_name,
+                            "labels": issue_labels,
+                            "language": lang,
+                            "is_beginner_friendly": any(l.lower() in BEGINNER_LABELS for l in issue_labels)
+                        })
+                except Exception:
+                    continue
         random.shuffle(all_issues)
         return all_issues[:limit]
     
@@ -193,10 +231,14 @@ class RecommendationEngine:
             else:
                 repo_tasks.append(None)
         
-        repo_results = await asyncio.gather(*[t if t else asyncio.sleep(0, result=None) for t in repo_tasks], return_exceptions=True)
+        repo_results = await asyncio.gather(
+            *[t if t else asyncio.sleep(0, result=None) for t in repo_tasks],
+            return_exceptions=True
+        )
         
         for i, item in enumerate(issues):
-            if len(recommendations) >= limit: break
+            if len(recommendations) >= limit:
+                break
             repo_data = repo_results[i] if i < len(repo_results) and not isinstance(repo_results[i], Exception) and repo_results[i] is not None else None
             issue = item["issue"]
             repo_full_name = item["repo_full_name"]
@@ -205,14 +247,11 @@ class RecommendationEngine:
             is_beginner = item["is_beginner_friendly"]
             has_good_first = "good first issue" in [l.lower() for l in issue_labels]
             
-            # Build structured match reasons
             match_reasons = []
             matched_frameworks = []
             
             if issue_language in profile["primary_languages"]:
                 match_reasons.append(f"Matches your primary language: {issue_language}")
-            elif issue_language in profile["secondary_languages"]:
-                match_reasons.append(f"Matches your interest: {issue_language}")
             
             repo_topics = [t.lower() for t in (repo_data.get("topics", []) if repo_data else [])]
             for topic in repo_topics:
@@ -233,52 +272,10 @@ class RecommendationEngine:
                 stars = repo_data.get("stargazers_count", 0)
                 if stars > 10000:
                     match_reasons.append(f"Popular repo ({stars:,} stars)")
-                elif stars > 100:
-                    match_reasons.append(f"Active repo ({stars:,} stars)")
             
-            # Calculate individual factor scores
-            skill_match = 95 if issue_language in profile["primary_languages"] else 70 if issue_language in profile["secondary_languages"] else 40
+            final_score = 85 if has_good_first else 75 if is_beginner else 60
             if matched_frameworks:
-                skill_match = min(100, skill_match + 5)
-            
-            difficulty_score = 90 if has_good_first else 70 if is_beginner else 50
-            
-            repo_health_score = HealthScorer.calculate(repo_data).get("overall", 70) if repo_data else 65
-            
-            freshness_score = 80
-            if repo_data and repo_data.get("pushed_at"):
-                from datetime import datetime as dt
-                try:
-                    pushed = dt.fromisoformat(repo_data["pushed_at"].replace("Z", "+00:00"))
-                    days = (dt.now(timezone.utc) - pushed).days
-                    if days < 7: freshness_score = 95
-                    elif days < 30: freshness_score = 80
-                    elif days < 90: freshness_score = 60
-                    else: freshness_score = 40
-                except: pass
-            
-            clarity_score = 70
-            if issue.get("body") and len(issue.get("body", "")) > 100:
-                clarity_score = 90
-            elif issue.get("body") and len(issue.get("body", "")) > 20:
-                clarity_score = 75
-            
-            # Weighted final score
-            final_score = round(
-                skill_match * 0.30 +
-                difficulty_score * 0.25 +
-                repo_health_score * 0.20 +
-                clarity_score * 0.15 +
-                freshness_score * 0.10
-            )
-            
-            score_breakdown = {
-                "skill_match": {"score": skill_match, "label": "Skill Match", "weight": "30%"},
-                "difficulty": {"score": difficulty_score, "label": "Difficulty", "weight": "25%"},
-                "repo_health": {"score": repo_health_score, "label": "Repository Health", "weight": "20%"},
-                "clarity": {"score": clarity_score, "label": "Issue Clarity", "weight": "15%"},
-                "freshness": {"score": freshness_score, "label": "Freshness", "weight": "10%"},
-            }
+                final_score = min(100, final_score + 5)
             
             rec = {
                 "issue_number": issue["number"],
@@ -287,17 +284,19 @@ class RecommendationEngine:
                 "repo_stars": repo_data.get("stargazers_count", 0) if repo_data else 0,
                 "labels": issue_labels,
                 "overall_score": final_score,
-                "difficulty_score": difficulty_score,
-                "merge_chance": 90 if has_good_first else 75 if is_beginner else 60,
-                "beginner_score": 95 if has_good_first else 80 if is_beginner else 40,
-                "repo_health": repo_health_score,
+                "difficulty_score": 90 if has_good_first else 70,
+                "merge_chance": 90 if has_good_first else 75,
+                "beginner_score": 95 if has_good_first else 80,
+                "repo_health": 70,
                 "url": issue["html_url"],
-                "verdict": "Great opportunity for you" if final_score >= 80 else "Good opportunity" if final_score >= 60 else "Worth considering",
-                "estimated_hours": "1-2h" if has_good_first else "2-4h" if is_beginner else "4-8h",
+                "verdict": "Great opportunity for you" if final_score >= 80 else "Good opportunity",
+                "estimated_hours": "1-2h" if has_good_first else "2-4h",
                 "match_reasons": match_reasons,
                 "matched_frameworks": matched_frameworks,
-                "score_breakdown": score_breakdown,
-                "reason": ai_service.generate_recommendation_reason(issue["title"], repo_full_name, final_score, "Easy" if has_good_first else "Medium", issue_labels)
+                "reason": ai_service.generate_recommendation_reason(
+                    issue["title"], repo_full_name, final_score,
+                    "Easy" if has_good_first else "Medium", issue_labels
+                )
             }
             recommendations.append(rec)
             self._store_history(username, issue, rec, repo_full_name)
@@ -306,11 +305,39 @@ class RecommendationEngine:
         return recommendations
     
     def _store_history(self, username: str, issue: dict, rec: dict, repo_full_name: str):
-        if not username: return
+        if not username:
+            return
         try:
             db = SessionLocal()
-            existing = db.query(RecommendationHistory).filter(RecommendationHistory.user_id == username, RecommendationHistory.issue_github_id == issue["id"]).first()
-            if existing: db.close(); return
-            history = RecommendationHistory(user_id=username, issue_github_id=issue["id"], issue_number=issue["number"], issue_title=issue["title"], repository_full_name=repo_full_name, overall_score=rec["overall_score"], difficulty_score=rec["difficulty_score"], merge_chance=rec["merge_chance"], beginner_score=rec["beginner_score"], repo_health=rec["repo_health"], verdict=rec["verdict"], estimated_hours=rec["estimated_hours"], ai_reason=rec["reason"], labels=rec["labels"], was_viewed=False, was_clicked=False, was_contributed=False, recommended_at=datetime.now(timezone.utc))
-            db.add(history); db.commit(); db.close()
-        except Exception as e: logger.warning(f"Failed to store history: {str(e)[:80]}")
+            existing = db.query(RecommendationHistory).filter(
+                RecommendationHistory.user_id == username,
+                RecommendationHistory.issue_github_id == issue["id"]
+            ).first()
+            if existing:
+                db.close()
+                return
+            history = RecommendationHistory(
+                user_id=username,
+                issue_github_id=issue["id"],
+                issue_number=issue["number"],
+                issue_title=issue["title"],
+                repository_full_name=repo_full_name,
+                overall_score=rec["overall_score"],
+                difficulty_score=rec["difficulty_score"],
+                merge_chance=rec["merge_chance"],
+                beginner_score=rec["beginner_score"],
+                repo_health=rec["repo_health"],
+                verdict=rec["verdict"],
+                estimated_hours=rec["estimated_hours"],
+                ai_reason=rec["reason"],
+                labels=rec["labels"],
+                was_viewed=False,
+                was_clicked=False,
+                was_contributed=False,
+                recommended_at=datetime.now(timezone.utc)
+            )
+            db.add(history)
+            db.commit()
+            db.close()
+        except Exception as e:
+            logger.warning(f"Failed to store history: {str(e)[:80]}")

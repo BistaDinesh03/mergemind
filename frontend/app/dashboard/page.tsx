@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
-  const fetchRecommendation = async (showLoader = true) => {
+  const fetchRecommendation = async (showLoader = true, excludeId: number | null = null) => {
     if (!username) return
     if (showLoader) setRefreshing(true)
     setLoading(true)
@@ -67,22 +67,35 @@ export default function DashboardPage() {
     }
     
     try {
-      const [recData, progressData] = await Promise.all([
-        fetchWithCache(`${API}/api/recommendations/top?limit=1`),
-        fetchWithCache(`${API}/api/history/progress`)
-      ])
+      const excludeParam = excludeId ? `&exclude_issue_id=${excludeId}` : ""
+      const data = await fetchWithCache(`${API}/api/recommendations/top?limit=1${excludeParam}`)
       
-      if (recData?.recommendations?.length > 0) {
-        setRecommendation(recData.recommendations[0])
+      if (data?.recommendations?.length > 0) {
+        const newRec = data.recommendations[0]
+        
+        // If same issue came back despite exclusion, try without cache
+        if (excludeId && newRec.issue_number === excludeId) {
+          const freshData = await fetch(
+            `${API}/api/recommendations/top?limit=5&exclude_issue_id=${excludeId}`
+          ).then(r => r.json())
+          if (freshData?.recommendations?.length > 0) {
+            const differentRec = freshData.recommendations.find(
+              (r: any) => r.issue_number !== excludeId
+            )
+            if (differentRec) {
+              setRecommendation(differentRec)
+              setSaved(false)
+              setLastUpdated(new Date())
+              setLoading(false)
+              setRefreshing(false)
+              return
+            }
+          }
+        }
+        
+        setRecommendation(newRec)
         setSaved(false)
-      } else {
-        setRecommendation(FALLBACK_ISSUE)
       }
-      
-      if (progressData?.progress) {
-        setProgress(progressData.progress)
-      }
-      
       setLastUpdated(new Date())
     } catch {
       setRecommendation(FALLBACK_ISSUE)
@@ -91,6 +104,11 @@ export default function DashboardPage() {
       setLoading(false)
       setRefreshing(false)
     }
+  }
+
+  const handleFindAnother = () => {
+    const currentId = recommendation?.issue_number || null
+    fetchRecommendation(true, currentId)
   }
 
   const handleSave = async () => {
@@ -103,11 +121,6 @@ export default function DashboardPage() {
       setSaveMessage("Saved for later! ✓")
     }
     setTimeout(() => setSaveMessage(""), 2000)
-    try {
-      const ghId = recommendation.issue_github_id || recommendation.issue_number
-      const endpoint = saved ? "unsave" : "save"
-      await fetch(`${API}/api/history/recommendations/${ghId}/${endpoint}`, { method: "POST" })
-    } catch {}
   }
 
   useEffect(() => {
@@ -142,7 +155,6 @@ export default function DashboardPage() {
 
   const greeting = getGreeting()
   const timeAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null
-  const hasAnyProgress = progress.viewed > 0 || progress.started > 0 || progress.merged_prs > 0
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -157,7 +169,7 @@ export default function DashboardPage() {
           {refreshing && (
             <div className="flex items-center justify-center gap-2 py-4 text-sm text-zinc-500">
               <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-              Finding the best issue for you...
+              Finding a different issue for you...
             </div>
           )}
 
@@ -175,7 +187,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-zinc-500">AI-matched to your skills</p>
                     </div>
                   </div>
-                  <button onClick={() => fetchRecommendation(true)} disabled={refreshing}
+                  <button onClick={handleFindAnother} disabled={refreshing}
                     className="text-sm text-zinc-500 hover:text-white transition-colors flex items-center gap-1.5 disabled:opacity-50">
                     <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} /> Find Another
                   </button>
@@ -194,29 +206,7 @@ export default function DashboardPage() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded-full text-sm font-medium">
                     <Award className="w-3.5 h-3.5" /> {recommendation.overall_score || 90}/100
                   </span>
-                  <button onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a2e] border border-[#27272a] rounded-full text-sm text-zinc-400 hover:text-white transition-colors">
-                    <TrendingUp className="w-3.5 h-3.5" /> Why this score
-                    <ChevronDown className={`w-3 h-3 transition-transform ${showScoreBreakdown ? "rotate-180" : ""}`} />
-                  </button>
                 </div>
-
-                {showScoreBreakdown && recommendation.score_breakdown && Object.keys(recommendation.score_breakdown).length > 0 && (
-                  <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px] animate-fadeIn">
-                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Opportunity Score Breakdown</p>
-                    <div className="space-y-2">
-                      {Object.values(recommendation.score_breakdown).map((factor: any, i: number) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <span className="text-xs text-zinc-400 w-32 flex-shrink-0">{factor.label}</span>
-                          <div className="flex-1 h-1.5 bg-[#27272a] rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full transition-all duration-500 ${factor.score >= 80 ? "bg-green-500" : factor.score >= 60 ? "bg-blue-500" : "bg-yellow-500"}`} style={{ width: `${factor.score}%` }} />
-                          </div>
-                          <span className="text-xs font-medium w-8 text-right flex-shrink-0">{factor.score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {recommendation.match_reasons && recommendation.match_reasons.length > 0 && (
                   <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px]">
@@ -254,40 +244,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Contribution Journey — NEW */}
-        {hasAnyProgress && (
-          <section className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-purple-400" /> Your Journey
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {[
-                { label: "Viewed", value: progress.viewed, done: progress.viewed > 0 },
-                { label: "Started", value: progress.started, done: progress.started > 0 },
-                { label: "Open PRs", value: progress.open_prs, done: progress.open_prs > 0 },
-                { label: "Merged", value: progress.merged_prs, done: progress.merged_prs > 0 },
-                { label: "Completed", value: progress.completed, done: progress.completed > 0 },
-              ].map(stage => (
-                <div key={stage.label} className={`text-center p-4 rounded-[16px] ${stage.done ? "bg-green-500/5 border border-green-500/20" : "bg-[#1a1a2e] border border-[#27272a]"}`}>
-                  {stage.done ? (
-                    <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-2" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-zinc-600 mx-auto mb-2" />
-                  )}
-                  <p className="text-xl font-bold">{stage.value}</p>
-                  <p className="text-xs text-zinc-500">{stage.label}</p>
-                </div>
-              ))}
-            </div>
-            {progress.merged_prs > 0 && (
-              <p className="text-sm text-green-400 mt-4 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" /> You have {progress.merged_prs} merged PR{progress.merged_prs > 1 ? "s" : ""}! 🎉
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Compass, label: "Browse Issues", href: "/discover", color: "text-purple-400" },
