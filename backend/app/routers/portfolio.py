@@ -1,16 +1,15 @@
 """Portfolio router with pagination support."""
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Path
 from ..services.portfolio_service import PortfolioService
 from ..database import SessionLocal
 from ..models.recommendation import RecommendationHistory
-from .auth import get_current_user
 
 router = APIRouter(tags=["Portfolio"])
 
 
 @router.get("/{username}")
 async def get_portfolio(
-    username: str = Query(..., description="GitHub username"),
+    username: str = Path(..., description="GitHub username"),
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100)
 ):
@@ -36,12 +35,11 @@ async def get_portfolio(
         started = sum(1 for r in records if r.was_clicked)
         completed = sum(1 for r in records if r.was_contributed)
         
-        # Extract skills from contribution labels
         skills_demonstrated = {}
         for r in records:
             if r.was_contributed and r.labels:
                 for label in r.labels:
-                    if label and label != "good first issue" and label != "help wanted" and label != "beginner" and label != "easy":
+                    if label and label not in ["good first issue", "help wanted", "beginner", "easy"]:
                         skills_demonstrated[label] = skills_demonstrated.get(label, 0) + 1
         
         data["contributions"] = {
