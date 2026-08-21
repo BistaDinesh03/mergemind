@@ -25,21 +25,16 @@ const FALLBACK_ISSUE = {
   title: "Update README with contribution guidelines",
   repo: "firstcontributions/first-contributions",
   issue_number: 1,
+  issue_github_id: 0,
   estimated_hours: "30m",
   overall_score: 95,
   merge_chance: 98,
   url: "https://github.com/firstcontributions/first-contributions",
   labels: ["good first issue", "documentation"],
-  match_reasons: ["Perfect first contribution", "No coding required", "Takes less than 30 minutes"],
+  match_reasons: ["Perfect first contribution", "No coding required"],
   matched_frameworks: [],
-  score_breakdown: {
-    skill_match: { score: 95, label: "Skill Match", weight: "30%" },
-    difficulty: { score: 98, label: "Difficulty", weight: "25%" },
-    repo_health: { score: 90, label: "Repository Health", weight: "20%" },
-    clarity: { score: 95, label: "Issue Clarity", weight: "15%" },
-    freshness: { score: 85, label: "Freshness", weight: "10%" },
-  },
-  reason: "The perfect first pull request — add your name to the contributors list."
+  score_breakdown: {},
+  reason: "The perfect first pull request."
 }
 
 export default function DashboardPage() {
@@ -50,6 +45,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [backendWaking, setBackendWaking] = useState(false)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [saveMessage, setSaveMessage] = useState("")
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
@@ -71,6 +68,7 @@ export default function DashboardPage() {
       const data = await fetchWithCache(`${API}/api/recommendations/top?limit=1`)
       if (data?.recommendations?.length > 0) {
         setRecommendation(data.recommendations[0])
+        setSaved(false)
       } else {
         setRecommendation(FALLBACK_ISSUE)
       }
@@ -82,6 +80,27 @@ export default function DashboardPage() {
       setLoading(false)
       setRefreshing(false)
     }
+  }
+
+  const handleSave = async () => {
+    if (!recommendation?.issue_github_id && recommendation?.issue_number !== 1) return
+    
+    if (saved) {
+      setSaved(false)
+      setSaveMessage("Removed from saved")
+    } else {
+      setSaved(true)
+      setSaveMessage("Saved for later! ✓")
+    }
+    
+    setTimeout(() => setSaveMessage(""), 2000)
+    
+    // Try to persist to backend if available
+    try {
+      const ghId = recommendation.issue_github_id || recommendation.issue_number
+      const endpoint = saved ? "unsave" : "save"
+      await fetch(`${API}/api/history/recommendations/${ghId}/${endpoint}`, { method: "POST" })
+    } catch {}
   }
 
   useEffect(() => {
@@ -116,7 +135,6 @@ export default function DashboardPage() {
 
   const greeting = getGreeting()
   const timeAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null
-  const breakdown = recommendation?.score_breakdown || {}
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -168,32 +186,22 @@ export default function DashboardPage() {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded-full text-sm font-medium">
                     <Award className="w-3.5 h-3.5" /> {recommendation.overall_score || 90}/100
                   </span>
-                  <button 
-                    onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a2e] border border-[#27272a] rounded-full text-sm text-zinc-400 hover:text-white transition-colors"
-                  >
+                  <button onClick={() => setShowScoreBreakdown(!showScoreBreakdown)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a2e] border border-[#27272a] rounded-full text-sm text-zinc-400 hover:text-white transition-colors">
                     <TrendingUp className="w-3.5 h-3.5" /> Why this score
                     <ChevronDown className={`w-3 h-3 transition-transform ${showScoreBreakdown ? "rotate-180" : ""}`} />
                   </button>
                 </div>
 
-                {/* Score Breakdown */}
-                {showScoreBreakdown && Object.keys(breakdown).length > 0 && (
+                {showScoreBreakdown && recommendation.score_breakdown && Object.keys(recommendation.score_breakdown).length > 0 && (
                   <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px] animate-fadeIn">
-                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-                      Opportunity Score Breakdown
-                    </p>
+                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Opportunity Score Breakdown</p>
                     <div className="space-y-2">
-                      {Object.values(breakdown).map((factor: any, i: number) => (
+                      {Object.values(recommendation.score_breakdown).map((factor: any, i: number) => (
                         <div key={i} className="flex items-center gap-3">
                           <span className="text-xs text-zinc-400 w-32 flex-shrink-0">{factor.label}</span>
                           <div className="flex-1 h-1.5 bg-[#27272a] rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                factor.score >= 80 ? "bg-green-500" : factor.score >= 60 ? "bg-blue-500" : "bg-yellow-500"
-                              }`}
-                              style={{ width: `${factor.score}%` }}
-                            />
+                            <div className={`h-full rounded-full transition-all duration-500 ${factor.score >= 80 ? "bg-green-500" : factor.score >= 60 ? "bg-blue-500" : "bg-yellow-500"}`} style={{ width: `${factor.score}%` }} />
                           </div>
                           <span className="text-xs font-medium w-8 text-right flex-shrink-0">{factor.score}</span>
                           <span className="text-[10px] text-zinc-600 w-10 text-right flex-shrink-0">{factor.weight}</span>
@@ -203,7 +211,6 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Why This Matches */}
                 {recommendation.match_reasons && recommendation.match_reasons.length > 0 && (
                   <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px]">
                     <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
@@ -217,15 +224,6 @@ export default function DashboardPage() {
                         </div>
                       ))}
                     </div>
-                    {recommendation.matched_frameworks && recommendation.matched_frameworks.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {recommendation.matched_frameworks.map((fw: string) => (
-                          <span key={fw} className="px-2 py-0.5 text-[10px] bg-purple-500/10 text-purple-300 rounded-full border border-purple-500/20">
-                            {fw}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -234,10 +232,19 @@ export default function DashboardPage() {
                     className="h-11 px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
                     <Play className="w-4 h-4" /> Start Contributing
                   </Link>
-                  <button className="h-11 px-4 bg-[#18181b] border border-[#27272a] rounded-[14px] text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors inline-flex items-center gap-2">
-                    <Bookmark className="w-4 h-4" /> Save
+                  <button onClick={handleSave}
+                    className={`h-11 px-4 border rounded-[14px] text-sm transition-colors inline-flex items-center gap-2 ${
+                      saved 
+                        ? "bg-green-500/10 border-green-500/20 text-green-400" 
+                        : "bg-[#18181b] border-[#27272a] text-zinc-400 hover:text-white hover:border-zinc-600"
+                    }`}>
+                    <Bookmark className="w-4 h-4" /> {saved ? "Saved" : "Save"}
                   </button>
                 </div>
+
+                {saveMessage && (
+                  <p className="text-xs text-green-400 mb-3">{saveMessage}</p>
+                )}
 
                 {timeAgo !== null && (
                   <p className="text-xs text-zinc-600">Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}</p>

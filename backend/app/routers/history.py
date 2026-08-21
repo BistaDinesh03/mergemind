@@ -45,6 +45,7 @@ async def get_recommendation_history(
                     "estimated_hours": r.estimated_hours,
                     "ai_reason": r.ai_reason,
                     "labels": r.labels,
+                    "saved": r.saved,
                     "was_viewed": r.was_viewed,
                     "was_clicked": r.was_clicked,
                     "was_contributed": r.was_contributed,
@@ -53,6 +54,84 @@ async def get_recommendation_history(
                 for r in records
             ]
         }
+    finally:
+        db.close()
+
+
+@router.get("/saved")
+async def get_saved_recommendations(request: Request):
+    """Get user's saved recommendations."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        records = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username,
+            RecommendationHistory.saved == True
+        ).order_by(RecommendationHistory.interacted_at.desc()).all()
+        
+        return {
+            "username": username,
+            "total": len(records),
+            "saved": [
+                {
+                    "id": r.id,
+                    "issue_github_id": r.issue_github_id,
+                    "issue_number": r.issue_number,
+                    "issue_title": r.issue_title,
+                    "repository_full_name": r.repository_full_name,
+                    "overall_score": r.overall_score,
+                    "labels": r.labels,
+                    "saved_at": r.interacted_at.isoformat() if r.interacted_at else None
+                }
+                for r in records
+            ]
+        }
+    finally:
+        db.close()
+
+
+@router.post("/recommendations/{issue_github_id}/save")
+async def save_recommendation(request: Request, issue_github_id: int):
+    """Save a recommendation for later."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        record = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username,
+            RecommendationHistory.issue_github_id == issue_github_id
+        ).first()
+        
+        if record:
+            record.saved = True
+            record.interacted_at = func.now()
+            db.commit()
+            return {"status": "ok", "saved": True}
+        
+        return {"status": "not_found", "saved": False}
+    finally:
+        db.close()
+
+
+@router.post("/recommendations/{issue_github_id}/unsave")
+async def unsave_recommendation(request: Request, issue_github_id: int):
+    """Remove a recommendation from saved list."""
+    username = await get_current_user(request)
+    
+    db = SessionLocal()
+    try:
+        record = db.query(RecommendationHistory).filter(
+            RecommendationHistory.user_id == username,
+            RecommendationHistory.issue_github_id == issue_github_id
+        ).first()
+        
+        if record:
+            record.saved = False
+            db.commit()
+            return {"status": "ok", "saved": False}
+        
+        return {"status": "not_found", "saved": False}
     finally:
         db.close()
 
@@ -72,7 +151,7 @@ async def get_progress(request: Request):
             "username": username,
             "progress": {
                 "viewed": sum(1 for r in all_records if r.was_viewed),
-                "saved": 0,
+                "saved": sum(1 for r in all_records if r.saved),
                 "started": sum(1 for r in all_records if r.was_clicked),
                 "completed": sum(1 for r in all_records if r.was_contributed),
                 "total_recommendations": len(all_records),
@@ -96,8 +175,9 @@ async def mark_viewed(request: Request, issue_github_id: int):
         
         if record:
             record.was_viewed = True
+            record.interacted_at = func.now()
             db.commit()
-            return {"status": "ok", "issue_github_id": issue_github_id}
+            return {"status": "ok"}
         
         return {"status": "not_found"}
     finally:
@@ -106,7 +186,7 @@ async def mark_viewed(request: Request, issue_github_id: int):
 
 @router.post("/recommendations/{issue_github_id}/started")
 async def mark_started(request: Request, issue_github_id: int):
-    """Mark a recommendation as started (user clicked Start Contributing)."""
+    """Mark a recommendation as started."""
     username = await get_current_user(request)
     
     db = SessionLocal()
@@ -118,8 +198,9 @@ async def mark_started(request: Request, issue_github_id: int):
         
         if record:
             record.was_clicked = True
+            record.interacted_at = func.now()
             db.commit()
-            return {"status": "ok", "issue_github_id": issue_github_id}
+            return {"status": "ok"}
         
         return {"status": "not_found"}
     finally:
@@ -128,7 +209,7 @@ async def mark_started(request: Request, issue_github_id: int):
 
 @router.post("/recommendations/{issue_github_id}/completed")
 async def mark_completed(request: Request, issue_github_id: int):
-    """Mark a recommendation as completed (PR opened)."""
+    """Mark a recommendation as completed."""
     username = await get_current_user(request)
     
     db = SessionLocal()
@@ -140,8 +221,9 @@ async def mark_completed(request: Request, issue_github_id: int):
         
         if record:
             record.was_contributed = True
+            record.interacted_at = func.now()
             db.commit()
-            return {"status": "ok", "issue_github_id": issue_github_id}
+            return {"status": "ok"}
         
         return {"status": "not_found"}
     finally:
