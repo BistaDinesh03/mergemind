@@ -23,9 +23,9 @@ async def get_portfolio(
     if not data:
         raise HTTPException(status_code=404, detail=f"GitHub user '{username}' not found")
     
-    # Add contribution proof from MergeMind database
-    db = SessionLocal()
+    # Add contribution proof — wrapped in try/except so database issues don't break portfolio
     try:
+        db = SessionLocal()
         records = db.query(RecommendationHistory).filter(
             RecommendationHistory.user_id == username
         ).all()
@@ -50,7 +50,18 @@ async def get_portfolio(
             "total_tracked": len(records),
             "skills_demonstrated": skills_demonstrated
         }
+    except Exception:
+        # Contribution data is non-critical — return empty if database fails
+        data["contributions"] = {
+            "viewed": 0,
+            "saved": 0,
+            "started": 0,
+            "completed": 0,
+            "total_tracked": 0,
+            "skills_demonstrated": {}
+        }
     finally:
-        db.close()
+        if 'db' in locals():
+            db.close()
     
     return data
