@@ -8,7 +8,8 @@ import { fetchWithCache } from "@/lib/api"
 import { 
   Github, Star, Users, GitFork, ExternalLink, 
   MapPin, Building2, Link2, ArrowUpRight,
-  CheckCircle, Trophy, Globe
+  CheckCircle, Trophy, Globe, TrendingUp, Zap,
+  Target, Code, Award
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -26,7 +27,6 @@ export default function PortfolioPage() {
       setLoading(false)
       return
     }
-    const startTime = performance.now()
     setLoading(true)
     setError(null)
     
@@ -34,7 +34,6 @@ export default function PortfolioPage() {
       .then(d => {
         if (d?.error) throw new Error(d.error)
         setData(d)
-        console.log(`Portfolio loaded in ${Math.round(performance.now() - startTime)}ms`)
       })
       .catch(err => setError(err.message || "Failed to load portfolio"))
       .finally(() => setLoading(false))
@@ -78,18 +77,13 @@ export default function PortfolioPage() {
   const repos = data.repositories || []
   const languages = [...new Set(repos.map((r: any) => r.language).filter(Boolean))]
   const totalStars = repos.reduce((s: number, r: any) => s + (r.stars || 0), 0)
-
-  const achievements = [
-    { icon: GitFork, label: "Repositories", value: data.public_repos || 0, color: "text-blue-400" },
-    { icon: Star, label: "Total Stars", value: totalStars, color: "text-yellow-400" },
-    { icon: Users, label: "Followers", value: data.followers || 0, color: "text-green-400" },
-    { icon: Globe, label: "Languages", value: languages.length, color: "text-purple-400" },
-  ]
+  const contributions = data.contributions || { viewed: 0, saved: 0, started: 0, completed: 0, total_tracked: 0, skills_demonstrated: {} }
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-12 animate-fadeIn">
         
+        {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-start gap-6">
           <img 
             src={data.avatar || ""} 
@@ -114,8 +108,58 @@ export default function PortfolioPage() {
           </div>
         </div>
 
+        {/* Contribution Proof — NEW Section */}
+        <section className="bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/10 rounded-[24px] p-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-purple-400" /> Open Source Contributions
+          </h2>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {[
+              { icon: Target, label: "Viewed", value: contributions.viewed, color: "text-zinc-400" },
+              { icon: Code, label: "Started", value: contributions.started, color: "text-blue-400" },
+              { icon: CheckCircle, label: "Completed", value: contributions.completed, color: "text-green-400" },
+              { icon: Award, label: "Total Tracked", value: contributions.total_tracked, color: "text-purple-400" },
+            ].map(stat => (
+              <div key={stat.label} className="bg-[#18181b] border border-[#27272a] rounded-[16px] p-4 text-center">
+                <stat.icon className={`w-5 h-5 ${stat.color} mx-auto mb-2`} />
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xs text-zinc-500 mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Skills Demonstrated */}
+          {Object.keys(contributions.skills_demonstrated || {}).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+                Skills Demonstrated
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(contributions.skills_demonstrated).map(([skill, count]: [string, any]) => (
+                  <span key={skill} className="px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded-full text-sm border border-purple-500/20">
+                    {skill} <span className="text-purple-400 font-medium">×{count}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {contributions.total_tracked === 0 && (
+            <p className="text-sm text-zinc-500 mt-2">
+              Start contributing through <Link href="/discover" className="text-purple-400 hover:text-purple-300">Discover</Link> — your journey will appear here.
+            </p>
+          )}
+        </section>
+
+        {/* GitHub Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {achievements.map(a => (
+          {[
+            { icon: GitFork, label: "Repositories", value: data.public_repos || 0, color: "text-blue-400" },
+            { icon: Star, label: "Total Stars", value: totalStars, color: "text-yellow-400" },
+            { icon: Users, label: "Followers", value: data.followers || 0, color: "text-green-400" },
+            { icon: Globe, label: "Languages", value: languages.length, color: "text-purple-400" },
+          ].map(a => (
             <div key={a.label} className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-5 text-center hover:border-zinc-600 transition-all">
               <a.icon className={`w-6 h-6 ${a.color} mx-auto mb-2`} />
               <p className="text-2xl font-bold">{a.value.toLocaleString()}</p>
@@ -124,6 +168,7 @@ export default function PortfolioPage() {
           ))}
         </div>
 
+        {/* Technologies */}
         {languages.length > 0 && (
           <section>
             <h2 className="text-lg font-bold mb-4">Technologies</h2>
@@ -137,6 +182,7 @@ export default function PortfolioPage() {
           </section>
         )}
 
+        {/* Featured Projects */}
         {repos.length > 0 && (
           <section>
             <h2 className="text-lg font-bold mb-4">Featured Projects</h2>
@@ -163,34 +209,8 @@ export default function PortfolioPage() {
                 </a>
               ))}
             </div>
-            {repos.length > 6 && (
-              <a href={`https://github.com/${username}?tab=repositories`} target="_blank" rel="noopener noreferrer"
-                className="mt-4 text-sm text-zinc-500 hover:text-zinc-300 transition-colors inline-flex items-center gap-1">
-                View all {repos.length} repositories <ArrowUpRight className="w-3 h-3" />
-              </a>
-            )}
           </section>
         )}
-
-        <section>
-          <h2 className="text-lg font-bold mb-4">Open Source Journey</h2>
-          <div className="space-y-3">
-            {[
-              { icon: CheckCircle, label: "Joined GitHub", date: data.created_at ? new Date(data.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : "Unknown", done: true },
-              { icon: data.public_repos > 0 ? CheckCircle : CheckCircle, label: "Created First Repository", date: data.public_repos > 0 ? `${data.public_repos} repositories` : "Not yet", done: data.public_repos > 0 },
-              { icon: CheckCircle, label: "Opened First Pull Request", date: "Start contributing", done: false },
-              { icon: Trophy, label: "First Merged PR", date: "Complete a contribution", done: false },
-            ].map((milestone, i) => (
-              <div key={i} className={`flex items-center gap-4 p-4 rounded-[16px] ${milestone.done ? "bg-[#18181b] border border-[#27272a]" : "bg-[#18181b]/50 border border-[#27272a]/50"}`}>
-                <milestone.icon className={`w-5 h-5 flex-shrink-0 ${milestone.done ? "text-green-400" : "text-zinc-600"}`} />
-                <div className="flex-1">
-                  <p className={`text-sm font-medium ${milestone.done ? "text-zinc-200" : "text-zinc-500"}`}>{milestone.label}</p>
-                  <p className="text-xs text-zinc-600">{milestone.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
       </main>
     </div>
