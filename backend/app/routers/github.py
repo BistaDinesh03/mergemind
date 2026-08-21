@@ -204,7 +204,7 @@ async def contribution_guide(
     owner = owner.strip().strip("/")
     repo = repo.strip().strip("/")
     
-    # Fetch issue with graceful fallback
+    # Fetch issue with graceful fallback — never return 404 to frontend
     issue_data = None
     try:
         issue_data = await github_client.request(
