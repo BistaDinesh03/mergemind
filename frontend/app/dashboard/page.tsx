@@ -9,7 +9,8 @@ import { fetchWithCache, waitForBackend } from "@/lib/api"
 import { 
   Sparkles, ArrowRight, Clock, GitMerge, Award, Github, 
   RefreshCw, Bookmark, Play, CheckCircle, Compass, 
-  FolderGit2, Loader2, Target, ChevronDown, TrendingUp
+  FolderGit2, Loader2, Target, ChevronDown, TrendingUp,
+  Circle
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -47,6 +48,7 @@ export default function DashboardPage() {
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveMessage, setSaveMessage] = useState("")
+  const [progress, setProgress] = useState({ viewed: 0, saved: 0, started: 0, completed: 0, merged_prs: 0, open_prs: 0 })
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
@@ -65,13 +67,22 @@ export default function DashboardPage() {
     }
     
     try {
-      const data = await fetchWithCache(`${API}/api/recommendations/top?limit=1`)
-      if (data?.recommendations?.length > 0) {
-        setRecommendation(data.recommendations[0])
+      const [recData, progressData] = await Promise.all([
+        fetchWithCache(`${API}/api/recommendations/top?limit=1`),
+        fetchWithCache(`${API}/api/history/progress`)
+      ])
+      
+      if (recData?.recommendations?.length > 0) {
+        setRecommendation(recData.recommendations[0])
         setSaved(false)
       } else {
         setRecommendation(FALLBACK_ISSUE)
       }
+      
+      if (progressData?.progress) {
+        setProgress(progressData.progress)
+      }
+      
       setLastUpdated(new Date())
     } catch {
       setRecommendation(FALLBACK_ISSUE)
@@ -84,7 +95,6 @@ export default function DashboardPage() {
 
   const handleSave = async () => {
     if (!recommendation?.issue_github_id && recommendation?.issue_number !== 1) return
-    
     if (saved) {
       setSaved(false)
       setSaveMessage("Removed from saved")
@@ -92,10 +102,7 @@ export default function DashboardPage() {
       setSaved(true)
       setSaveMessage("Saved for later! ✓")
     }
-    
     setTimeout(() => setSaveMessage(""), 2000)
-    
-    // Try to persist to backend if available
     try {
       const ghId = recommendation.issue_github_id || recommendation.issue_number
       const endpoint = saved ? "unsave" : "save"
@@ -135,6 +142,7 @@ export default function DashboardPage() {
 
   const greeting = getGreeting()
   const timeAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null
+  const hasAnyProgress = progress.viewed > 0 || progress.started > 0 || progress.merged_prs > 0
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -204,7 +212,6 @@ export default function DashboardPage() {
                             <div className={`h-full rounded-full transition-all duration-500 ${factor.score >= 80 ? "bg-green-500" : factor.score >= 60 ? "bg-blue-500" : "bg-yellow-500"}`} style={{ width: `${factor.score}%` }} />
                           </div>
                           <span className="text-xs font-medium w-8 text-right flex-shrink-0">{factor.score}</span>
-                          <span className="text-[10px] text-zinc-600 w-10 text-right flex-shrink-0">{factor.weight}</span>
                         </div>
                       ))}
                     </div>
@@ -234,26 +241,53 @@ export default function DashboardPage() {
                   </Link>
                   <button onClick={handleSave}
                     className={`h-11 px-4 border rounded-[14px] text-sm transition-colors inline-flex items-center gap-2 ${
-                      saved 
-                        ? "bg-green-500/10 border-green-500/20 text-green-400" 
-                        : "bg-[#18181b] border-[#27272a] text-zinc-400 hover:text-white hover:border-zinc-600"
+                      saved ? "bg-green-500/10 border-green-500/20 text-green-400" : "bg-[#18181b] border-[#27272a] text-zinc-400 hover:text-white hover:border-zinc-600"
                     }`}>
                     <Bookmark className="w-4 h-4" /> {saved ? "Saved" : "Save"}
                   </button>
                 </div>
 
-                {saveMessage && (
-                  <p className="text-xs text-green-400 mb-3">{saveMessage}</p>
-                )}
-
-                {timeAgo !== null && (
-                  <p className="text-xs text-zinc-600">Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}</p>
-                )}
+                {saveMessage && <p className="text-xs text-green-400 mb-3">{saveMessage}</p>}
+                {timeAgo !== null && <p className="text-xs text-zinc-600">Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}</p>}
               </div>
             </div>
           )}
         </div>
 
+        {/* Contribution Journey — NEW */}
+        {hasAnyProgress && (
+          <section className="bg-[#18181b] border border-[#27272a] rounded-[20px] p-6">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-purple-400" /> Your Journey
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {[
+                { label: "Viewed", value: progress.viewed, done: progress.viewed > 0 },
+                { label: "Started", value: progress.started, done: progress.started > 0 },
+                { label: "Open PRs", value: progress.open_prs, done: progress.open_prs > 0 },
+                { label: "Merged", value: progress.merged_prs, done: progress.merged_prs > 0 },
+                { label: "Completed", value: progress.completed, done: progress.completed > 0 },
+              ].map(stage => (
+                <div key={stage.label} className={`text-center p-4 rounded-[16px] ${stage.done ? "bg-green-500/5 border border-green-500/20" : "bg-[#1a1a2e] border border-[#27272a]"}`}>
+                  {stage.done ? (
+                    <CheckCircle className="w-5 h-5 text-green-400 mx-auto mb-2" />
+                  ) : (
+                    <Circle className="w-5 h-5 text-zinc-600 mx-auto mb-2" />
+                  )}
+                  <p className="text-xl font-bold">{stage.value}</p>
+                  <p className="text-xs text-zinc-500">{stage.label}</p>
+                </div>
+              ))}
+            </div>
+            {progress.merged_prs > 0 && (
+              <p className="text-sm text-green-400 mt-4 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" /> You have {progress.merged_prs} merged PR{progress.merged_prs > 1 ? "s" : ""}! 🎉
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* Quick Actions */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Compass, label: "Browse Issues", href: "/discover", color: "text-purple-400" },
