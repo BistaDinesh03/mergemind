@@ -9,7 +9,7 @@ import { fetchWithCache, waitForBackend } from "@/lib/api"
 import { 
   Sparkles, ArrowRight, Clock, GitMerge, Award, Github, 
   RefreshCw, Bookmark, Play, CheckCircle, Users, Zap, 
-  Compass, FolderGit2, Loader2
+  Compass, FolderGit2, Loader2, Target
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -30,6 +30,8 @@ const FALLBACK_ISSUE = {
   merge_chance: 98,
   url: "https://github.com/firstcontributions/first-contributions",
   labels: ["good first issue", "documentation"],
+  match_reasons: ["Perfect first contribution", "No coding required", "Takes less than 30 minutes"],
+  matched_frameworks: [],
   reason: "The perfect first pull request — add your name to the contributors list. No coding required, takes less than 30 minutes."
 }
 
@@ -113,9 +115,7 @@ export default function DashboardPage() {
   }
 
   const greeting = getGreeting()
-  const timeAgo = lastUpdated
-    ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000)
-    : null
+  const timeAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -172,6 +172,32 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
+                {/* Why This Matches — NEW */}
+                {recommendation.match_reasons && recommendation.match_reasons.length > 0 && (
+                  <div className="mb-5 p-4 bg-[#18181b]/50 border border-[#27272a] rounded-[14px]">
+                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-purple-400" /> Why this matches you
+                    </p>
+                    <div className="space-y-1.5">
+                      {recommendation.match_reasons.slice(0, 5).map((reason: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400 mt-0.5 flex-shrink-0" />
+                          <span>{reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {recommendation.matched_frameworks && recommendation.matched_frameworks.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {recommendation.matched_frameworks.map((fw: string) => (
+                          <span key={fw} className="px-2 py-0.5 text-[10px] bg-purple-500/10 text-purple-300 rounded-full border border-purple-500/20">
+                            {fw}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {recommendation.reason && (
                   <div className="flex items-start gap-2 mb-5 p-3 bg-purple-500/5 border border-purple-500/10 rounded-[14px]">
                     <Sparkles className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
@@ -180,9 +206,7 @@ export default function DashboardPage() {
                 )}
 
                 <div className="flex gap-3 mb-4">
-                  <Link href={recommendation.url && recommendation.url.includes("github.com") && !recommendation.url.includes("/issues/")
-                    ? recommendation.url
-                    : `/repo/${recommendation.repo}/issues/${recommendation.issue_number}`}
+                  <Link href={`/repo/${recommendation.repo}/issues/${recommendation.issue_number}`}
                     className="h-11 px-6 bg-white text-zinc-900 rounded-[14px] font-semibold text-sm inline-flex items-center gap-2 hover:bg-zinc-200 transition-colors">
                     <Play className="w-4 h-4" /> Start Contributing
                   </Link>
@@ -198,22 +222,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
-        {recommendation && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { icon: CheckCircle, label: "Beginner Friendly", color: "text-green-400" },
-              { icon: Users, label: "Active Maintainers", color: "text-blue-400" },
-              { icon: Zap, label: "Small Change", color: "text-amber-400" },
-              { icon: GitMerge, label: "High Merge Rate", color: "text-purple-400" },
-            ].map(item => (
-              <div key={item.label} className="bg-[#18181b] border border-[#27272a] rounded-[16px] p-4 text-center hover:border-zinc-600 transition-all">
-                <item.icon className={`w-5 h-5 ${item.color} mx-auto mb-2`} />
-                <p className="text-xs text-zinc-400">{item.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
