@@ -5,11 +5,11 @@ import { Navbar } from "@/components/Navbar"
 import { PortfolioSkeleton } from "@/components/Skeletons"
 import { EmptyState } from "@/components/EmptyState"
 import { fetchWithCache } from "@/lib/api"
+import Link from "next/link"
 import { 
   Github, Star, Users, GitFork, ExternalLink, 
   MapPin, Building2, Link2, ArrowUpRight,
-  CheckCircle, Trophy, Globe, TrendingUp, Zap,
-  Target, Code, Award
+  CheckCircle, Trophy, Globe, Target, Code, Award, GitMerge
 } from "lucide-react"
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
@@ -17,6 +17,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 export default function PortfolioPage() {
   const { data: session, status } = useSession()
   const [data, setData] = useState<any>(null)
+  const [progress, setProgress] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const username = session?.user?.login || session?.user?.name || null
@@ -30,10 +31,14 @@ export default function PortfolioPage() {
     setLoading(true)
     setError(null)
     
-    fetchWithCache(`${API}/api/portfolio/${username}`)
-      .then(d => {
-        if (d?.error) throw new Error(d.error)
-        setData(d)
+    Promise.all([
+      fetchWithCache(`${API}/api/portfolio/${username}`),
+      fetchWithCache(`${API}/api/history/progress`)
+    ])
+      .then(([portfolioData, progressData]) => {
+        if (portfolioData?.error) throw new Error(portfolioData.error)
+        setData(portfolioData)
+        if (progressData?.progress) setProgress(progressData.progress)
       })
       .catch(err => setError(err.message || "Failed to load portfolio"))
       .finally(() => setLoading(false))
@@ -51,9 +56,7 @@ export default function PortfolioPage() {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#18181b] border border-[#27272a] flex items-center justify-center mb-6">
-            <Github className="w-8 h-8 text-zinc-500" />
-          </div>
+          <Github className="w-16 h-16 text-zinc-500 mb-6" />
           <h1 className="text-2xl font-bold mb-3">Sign in to view your portfolio</h1>
           <p className="text-zinc-400 mb-8">Connect your GitHub account to see your developer profile.</p>
           <button onClick={() => signIn("github")} className="h-12 px-8 bg-white text-zinc-900 rounded-[14px] font-semibold hover:bg-zinc-200 transition-colors">
@@ -68,7 +71,7 @@ export default function PortfolioPage() {
     return (
       <div className="min-h-screen bg-[#09090b]"><Navbar />
         <div className="flex items-center justify-center py-32">
-          <EmptyState kind="error" title="Could not load portfolio" description={error || ""} action={{ label: "Try Again", onClick: () => window.location.reload() }} />
+          <EmptyState kind="error" title="Could not load portfolio" action={{ label: "Try Again", onClick: () => window.location.reload() }} />
         </div>
       </div>
     )
@@ -77,7 +80,8 @@ export default function PortfolioPage() {
   const repos = data.repositories || []
   const languages = [...new Set(repos.map((r: any) => r.language).filter(Boolean))]
   const totalStars = repos.reduce((s: number, r: any) => s + (r.stars || 0), 0)
-  const contributions = data.contributions || { viewed: 0, saved: 0, started: 0, completed: 0, total_tracked: 0, skills_demonstrated: {} }
+  const contributions = data.contributions || {}
+  const p = progress || { viewed: 0, saved: 0, started: 0, completed: 0, merged_prs: 0, open_prs: 0, total_recommendations: 0 }
 
   return (
     <div className="min-h-screen bg-[#09090b] text-white"><Navbar />
@@ -85,21 +89,12 @@ export default function PortfolioPage() {
         
         {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-start gap-6">
-          <img 
-            src={data.avatar || ""} 
-            alt="" 
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-            className="w-24 h-24 rounded-full ring-2 ring-[#27272a] flex-shrink-0 bg-[#18181b]" 
-          />
+          <img src={data.avatar || ""} alt="" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            className="w-24 h-24 rounded-full ring-2 ring-[#27272a] flex-shrink-0 bg-[#18181b]" />
           <div className="flex-1">
             <h1 className="text-3xl font-bold">{data.name || username}</h1>
             <p className="text-zinc-500 text-lg">@{data.username || username}</p>
             {data.bio && <p className="text-zinc-400 mt-3 max-w-lg">{data.bio}</p>}
-            <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-zinc-500">
-              {data.company && <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4" />{data.company}</span>}
-              {data.location && <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{data.location}</span>}
-              {data.blog && <a href={data.blog} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300"><Link2 className="w-4 h-4" />{data.blog.replace("https://", "")}</a>}
-            </div>
             <div className="flex items-center gap-3 mt-4">
               <a href={`https://github.com/${username}`} target="_blank" rel="noopener noreferrer" className="h-10 px-5 bg-[#18181b] border border-[#27272a] rounded-[12px] text-sm font-medium inline-flex items-center gap-2 hover:bg-[#27272a] transition-colors">
                 <Github className="w-4 h-4" /> GitHub Profile <ArrowUpRight className="w-3 h-3" />
@@ -108,18 +103,18 @@ export default function PortfolioPage() {
           </div>
         </div>
 
-        {/* Contribution Proof — NEW Section */}
+        {/* Contribution Journey — Real PR data */}
         <section className="bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/10 rounded-[24px] p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-purple-400" /> Open Source Contributions
+            <Trophy className="w-5 h-5 text-purple-400" /> Contribution Journey
           </h2>
           
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { icon: Target, label: "Viewed", value: contributions.viewed, color: "text-zinc-400" },
-              { icon: Code, label: "Started", value: contributions.started, color: "text-blue-400" },
-              { icon: CheckCircle, label: "Completed", value: contributions.completed, color: "text-green-400" },
-              { icon: Award, label: "Total Tracked", value: contributions.total_tracked, color: "text-purple-400" },
+              { icon: Target, label: "Viewed", value: p.viewed, color: "text-zinc-400" },
+              { icon: Code, label: "Started", value: p.started, color: "text-blue-400" },
+              { icon: GitMerge, label: "Open PRs", value: p.open_prs, color: "text-yellow-400" },
+              { icon: CheckCircle, label: "Merged PRs", value: p.merged_prs, color: "text-green-400" },
             ].map(stat => (
               <div key={stat.label} className="bg-[#18181b] border border-[#27272a] rounded-[16px] p-4 text-center">
                 <stat.icon className={`w-5 h-5 ${stat.color} mx-auto mb-2`} />
@@ -129,25 +124,15 @@ export default function PortfolioPage() {
             ))}
           </div>
 
-          {/* Skills Demonstrated */}
-          {Object.keys(contributions.skills_demonstrated || {}).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-                Skills Demonstrated
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(contributions.skills_demonstrated).map(([skill, count]: [string, any]) => (
-                  <span key={skill} className="px-3 py-1.5 bg-purple-500/10 text-purple-300 rounded-full text-sm border border-purple-500/20">
-                    {skill} <span className="text-purple-400 font-medium">×{count}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
+          {p.merged_prs === 0 && p.open_prs === 0 && (
+            <p className="text-sm text-zinc-500">
+              Start contributing through <Link href="/discover" className="text-purple-400 hover:text-purple-300">Discover</Link> — your PRs will appear here automatically.
+            </p>
           )}
-
-          {contributions.total_tracked === 0 && (
-            <p className="text-sm text-zinc-500 mt-2">
-              Start contributing through <Link href="/discover" className="text-purple-400 hover:text-purple-300">Discover</Link> — your journey will appear here.
+          
+          {p.merged_prs > 0 && (
+            <p className="text-sm text-green-400 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> {p.merged_prs} pull request{p.merged_prs > 1 ? "s" : ""} merged — proof of your open source work!
             </p>
           )}
         </section>
@@ -194,14 +179,10 @@ export default function PortfolioPage() {
                     <h3 className="font-semibold text-sm group-hover:text-purple-400 transition-colors">{repo.name}</h3>
                     <ExternalLink className="w-4 h-4 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  {repo.description && (
-                    <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{repo.description}</p>
-                  )}
+                  {repo.description && <p className="text-xs text-zinc-500 mb-3 line-clamp-2">{repo.description}</p>}
                   <div className="flex items-center gap-4 text-xs text-zinc-600">
                     {repo.language && (
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-yellow-400" />{repo.language}
-                      </span>
+                      <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-400" />{repo.language}</span>
                     )}
                     <span className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400" />{repo.stars || 0}</span>
                     {repo.forks > 0 && <span className="flex items-center gap-1"><GitFork className="w-3 h-3" />{repo.forks}</span>}

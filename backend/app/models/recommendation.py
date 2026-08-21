@@ -26,6 +26,13 @@ class RecommendationHistory(Base):
     was_clicked = Column(Boolean, default=False)
     was_contributed = Column(Boolean, default=False)
     
+    # Real GitHub PR tracking
+    pr_url = Column(String(500))
+    pr_number = Column(Integer)
+    pr_status = Column(String(20))  # open, closed, merged
+    pr_merged = Column(Boolean, default=False)
+    pr_merged_at = Column(DateTime)
+    
     verdict = Column(String(50))
     estimated_hours = Column(String(20))
     ai_reason = Column(Text)
