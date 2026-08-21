@@ -56,6 +56,7 @@ class RecommendationEngine:
         """
         Get personalized recommendations.
         If exclude_issue_id provided, returns DIFFERENT issues than the excluded one.
+        Cache key includes username so different users get different recommendations.
         """
         cache_key = f"{username}:{limit}:{language}:exclude:{exclude_issue_id}"
         
@@ -102,7 +103,10 @@ class RecommendationEngine:
         return recommendations
     
     async def _fallback_issues(self, limit: int) -> list:
+        """Fallback: fetch real beginner issues from GitHub."""
         all_issues = []
+        
+        # Strategy 1: Search for good first issues globally
         try:
             q_parts = ["state:open", "type:issue", "is:public", 'label:"good first issue"']
             data = await github_client.request(
@@ -127,7 +131,44 @@ class RecommendationEngine:
                     })
         except Exception as e:
             logger.error(f"Fallback search failed: {e}")
-        return all_issues
+        
+        # Strategy 2: If still empty, fetch issues from known beginner repos
+        if not all_issues:
+            beginner_repos = [
+                "firstcontributions/first-contributions",
+                "github/explore",
+                "microsoft/terminal",
+                "facebook/react",
+            ]
+            for repo_full_name in beginner_repos:
+                if len(all_issues) >= limit:
+                    break
+                parts = repo_full_name.split("/")
+                if len(parts) != 2:
+                    continue
+                try:
+                    issues = await github_client.request(
+                        f"https://api.github.com/repos/{parts[0]}/{parts[1]}/issues",
+                        {"state": "open", "per_page": 5}
+                    )
+                    if issues:
+                        for issue in issues:
+                            if "pull_request" in issue:
+                                continue
+                            if len(all_issues) >= limit:
+                                break
+                            issue_labels = [l["name"] for l in issue.get("labels", [])]
+                            all_issues.append({
+                                "issue": issue,
+                                "repo_full_name": repo_full_name,
+                                "labels": issue_labels,
+                                "language": "unknown",
+                                "is_beginner_friendly": any(l.lower() in ["good first issue", "beginner"] for l in issue_labels)
+                            })
+                except Exception as e:
+                    logger.warning(f"Fallback repo {repo_full_name} failed: {e}")
+        
+        return all_issues[:limit]
     
     async def _build_skill_profile(self, username: str) -> dict:
         profile = {

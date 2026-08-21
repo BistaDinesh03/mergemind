@@ -22,22 +22,6 @@ function getGreeting(): string {
   return "Good evening"
 }
 
-const FALLBACK_ISSUE = {
-  title: "Update README with contribution guidelines",
-  repo: "firstcontributions/first-contributions",
-  issue_number: 1,
-  issue_github_id: 0,
-  estimated_hours: "30m",
-  overall_score: 95,
-  merge_chance: 98,
-  url: "https://github.com/firstcontributions/first-contributions",
-  labels: ["good first issue", "documentation"],
-  match_reasons: ["Perfect first contribution", "No coding required"],
-  matched_frameworks: [],
-  score_breakdown: {},
-  reason: "The perfect first pull request."
-}
-
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const [recommendation, setRecommendation] = useState<any>(null)
@@ -48,7 +32,6 @@ export default function DashboardPage() {
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveMessage, setSaveMessage] = useState("")
-  const [progress, setProgress] = useState({ viewed: 0, saved: 0, started: 0, completed: 0, merged_prs: 0, open_prs: 0 })
   const username = session?.user?.login || session?.user?.name || null
   const isLoading = status === "loading" || loading
 
@@ -60,7 +43,7 @@ export default function DashboardPage() {
     
     const backendUp = await waitForBackend()
     if (!backendUp) {
-      setRecommendation(FALLBACK_ISSUE)
+      setRecommendation(null)
       setLoading(false)
       setRefreshing(false)
       return
@@ -95,10 +78,12 @@ export default function DashboardPage() {
         
         setRecommendation(newRec)
         setSaved(false)
+      } else {
+        setRecommendation(null)
       }
       setLastUpdated(new Date())
     } catch {
-      setRecommendation(FALLBACK_ISSUE)
+      setRecommendation(null)
       setLastUpdated(new Date())
     } finally {
       setLoading(false)
@@ -112,7 +97,7 @@ export default function DashboardPage() {
   }
 
   const handleSave = async () => {
-    if (!recommendation?.issue_github_id && recommendation?.issue_number !== 1) return
+    if (!recommendation) return
     if (saved) {
       setSaved(false)
       setSaveMessage("Removed from saved")
@@ -240,6 +225,17 @@ export default function DashboardPage() {
                 {saveMessage && <p className="text-xs text-green-400 mb-3">{saveMessage}</p>}
                 {timeAgo !== null && <p className="text-xs text-zinc-600">Last updated: {timeAgo === 0 ? "just now" : `${timeAgo} min ago`}</p>}
               </div>
+            </div>
+          )}
+
+          {!recommendation && !refreshing && (
+            <div className="bg-[#18181b] border border-[#27272a] rounded-[24px] p-6 text-center">
+              <Sparkles className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
+              <p className="text-sm text-zinc-400 mb-4">No recommendations available right now.</p>
+              <button onClick={() => fetchRecommendation(true)} 
+                className="h-10 px-6 bg-white text-zinc-900 rounded-[14px] text-sm font-semibold hover:bg-zinc-200 transition-colors">
+                <RefreshCw className="w-4 h-4 inline mr-2" /> Try Again
+              </button>
             </div>
           )}
         </div>
