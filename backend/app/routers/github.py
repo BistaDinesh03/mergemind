@@ -21,7 +21,6 @@ async def search_repositories(
     if query: q_parts.append(f"{query} in:name,description")
     if language: q_parts.append(f"language:{language}")
     data = await github_client.request("https://api.github.com/search/repositories", {"q": " ".join(q_parts), "sort": sort, "order": "desc", "page": page, "per_page": per_page})
-    
     return {
         "total": data.get("total_count", 0) if data else 0,
         "page": page,
@@ -29,17 +28,14 @@ async def search_repositories(
         "last_checked": datetime.now(timezone.utc).isoformat(),
         "repositories": [
             {
-                "id": r["id"],
-                "full_name": r["full_name"],
+                "id": r["id"], "full_name": r["full_name"],
                 "owner": {"login": r["owner"]["login"], "avatar": r["owner"]["avatar_url"]},
-                "description": (r.get("description") or "")[:150] if r.get("description") else "No description available.",
-                "stars": r["stargazers_count"],
-                "forks": r["forks_count"],
+                "description": (r.get("description") or "No description available.")[:150],
+                "stars": r["stargazers_count"], "forks": r["forks_count"],
                 "open_issues": r["open_issues_count"],
                 "language": r.get("language") or "Other",
                 "topics": r.get("topics", [])[:5],
-                "updated_at": r["updated_at"],
-                "url": r["html_url"]
+                "updated_at": r["updated_at"], "url": r["html_url"]
             }
             for r in (data.get("items", []) if data else [])
         ]
@@ -62,33 +58,24 @@ async def search_issues(
     if labels:
         for label in labels.split(","):
             q_parts.append(f'label:"{label.strip()}"')
-    
     data = await github_client.request("https://api.github.com/search/issues", {"q": " ".join(q_parts), "sort": sort, "order": order, "page": page, "per_page": per_page})
-    
     if not data:
         return {"total": 0, "page": page, "per_page": per_page, "last_checked": datetime.now(timezone.utc).isoformat(), "issues": []}
-    
     return {
-        "total": data.get("total_count", 0),
-        "page": page,
-        "per_page": per_page,
+        "total": data.get("total_count", 0), "page": page, "per_page": per_page,
         "last_checked": datetime.now(timezone.utc).isoformat(),
         "issues": [
             {
-                "id": i["id"],
-                "number": i["number"],
-                "title": i["title"],
+                "id": i["id"], "number": i["number"], "title": i["title"],
                 "labels": [l["name"] for l in i.get("labels", [])],
                 "comments": i.get("comments", 0),
-                "created_at": i.get("created_at"),
-                "updated_at": i.get("updated_at"),
+                "created_at": i.get("created_at"), "updated_at": i.get("updated_at"),
                 "url": i["html_url"],
                 "repository_full_name": i.get("repository_url", "").replace("https://api.github.com/repos/", ""),
                 "user": {"login": i["user"]["login"], "avatar": i["user"]["avatar_url"]} if i.get("user") else None,
                 "is_beginner_friendly": any(l.lower() in ["good first issue", "beginner", "easy", "help wanted"] for l in [lbl["name"] for lbl in i.get("labels", [])])
             }
-            for i in data.get("items", [])
-            if "pull_request" not in i
+            for i in data.get("items", []) if "pull_request" not in i
         ]
     }
 
@@ -102,24 +89,201 @@ async def get_repository(owner: str = Path(example="fastapi"), repo: str = Path(
         raise HTTPException(status_code=404, detail=f"Repository {owner}/{repo} not found")
     health = HealthScorer.calculate(data)
     return {
-        "id": data["id"],
-        "full_name": data["full_name"],
+        "id": data["id"], "full_name": data["full_name"],
         "description": data.get("description", "") or "No description available.",
         "owner": {"login": data["owner"]["login"], "avatar": data["owner"]["avatar_url"]},
-        "stars": data["stargazers_count"],
-        "forks": data["forks_count"],
-        "open_issues": data["open_issues_count"],
-        "watchers": data.get("watchers_count", 0),
-        "language": data.get("language"),
-        "topics": data.get("topics", []),
+        "stars": data["stargazers_count"], "forks": data["forks_count"],
+        "open_issues": data["open_issues_count"], "watchers": data.get("watchers_count", 0),
+        "language": data.get("language"), "topics": data.get("topics", []),
         "license": data.get("license", {}).get("spdx_id") if data.get("license") else None,
         "default_branch": data.get("default_branch", "main"),
-        "pushed_at": data.get("pushed_at"),
-        "updated_at": data.get("updated_at"),
+        "pushed_at": data.get("pushed_at"), "updated_at": data.get("updated_at"),
         "url": data["html_url"],
         "last_checked": datetime.now(timezone.utc).isoformat(),
         "health": health
     }
+
+
+@router.get("/repositories/{owner}/{repo}/issues/{issue_number}/related-prs")
+async def related_pull_requests(
+    owner: str = Path(description="Repository owner"),
+    repo: str = Path(description="Repository name"),
+    issue_number: int = Path(description="Issue number")
+):
+    """
+    Find similar successfully merged PRs in the same repository.
+    Searches for closed PRs with related labels or keywords from the issue title.
+    """
+    owner = owner.strip().strip("/")
+    repo = repo.strip().strip("/")
+    
+    # Get the issue to find keywords
+    issue_data = await github_client.request(f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}")
+    if not issue_data:
+        raise HTTPException(status_code=404, detail=f"Issue #{issue_number} not found")
+    
+    issue_title = issue_data.get("title", "")
+    issue_labels = [l["name"] for l in issue_data.get("labels", [])]
+    
+    # Search for closed PRs in this repo
+    q_parts = [f"repo:{owner}/{repo}", "type:pr", "state:closed", "is:merged"]
+    
+    # Add label-based matching if labels exist
+    if issue_labels:
+        for label in issue_labels[:2]:
+            q_parts.append(f'label:"{label}"')
+    
+    # Search without label filter first
+    data = await github_client.request(
+        "https://api.github.com/search/issues",
+        {"q": f"repo:{owner}/{repo} type:pr state:closed is:merged", "sort": "updated", "order": "desc", "per_page": 5}
+    )
+    
+    related = []
+    if data:
+        for pr in data.get("items", []):
+            related.append({
+                "number": pr.get("number"),
+                "title": pr.get("title", ""),
+                "url": pr.get("html_url", ""),
+                "merged_at": pr.get("closed_at"),
+                "author": pr.get("user", {}).get("login", "unknown") if pr.get("user") else "unknown",
+                "comments": pr.get("comments", 0)
+            })
+    
+    return {
+        "repository": f"{owner}/{repo}",
+        "issue_number": issue_number,
+        "related_prs": related[:3],
+        "total": len(related)
+    }
+
+
+@router.get("/repositories/{owner}/{repo}/issues/{issue_number}/guide")
+async def contribution_guide(
+    owner: str = Path(description="Repository owner"),
+    repo: str = Path(description="Repository name"),
+    issue_number: int = Path(description="Issue number")
+):
+    owner = owner.strip().strip("/")
+    repo = repo.strip().strip("/")
+    
+    import asyncio
+    issue_data, repo_data, related_prs_data = await asyncio.gather(
+        github_client.request(f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"),
+        github_client.request(f"https://api.github.com/repos/{owner}/{repo}"),
+        github_client.request("https://api.github.com/search/issues", {"q": f"repo:{owner}/{repo} type:pr state:closed is:merged", "sort": "updated", "order": "desc", "per_page": 3})
+    )
+    
+    if not issue_data:
+        raise HTTPException(status_code=404, detail=f"Issue #{issue_number} not found")
+    if not repo_data:
+        raise HTTPException(status_code=404, detail=f"Repository {owner}/{repo} not found")
+    
+    issue_labels = [l["name"] for l in issue_data.get("labels", [])]
+    ai_analysis = ai_service.analyze_issue(
+        issue_data.get("title", ""), issue_data.get("body", "") or "",
+        issue_labels, f"{owner}/{repo}",
+        repo_data.get("stargazers_count", 0),
+        HealthScorer.calculate(repo_data).get("overall", 75)
+    )
+    
+    language = repo_data.get("language", "")
+    default_branch = repo_data.get("default_branch", "main")
+    clone_url = repo_data.get("clone_url", f"https://github.com/{owner}/{repo}.git")
+    topics = repo_data.get("topics", [])
+    setup_commands = _get_setup_commands(language, topics)
+    issue_scoring = IssueScorer.calculate(issue_data, repo_data)
+    is_beginner = any(l.lower() in ["good first issue", "beginner", "easy"] for l in issue_labels)
+    
+    # Build related PRs list
+    related_prs = []
+    if related_prs_data:
+        for pr in related_prs_data.get("items", [])[:3]:
+            related_prs.append({
+                "number": pr.get("number"),
+                "title": pr.get("title", ""),
+                "url": pr.get("html_url", ""),
+                "merged_at": pr.get("closed_at"),
+                "author": pr.get("user", {}).get("login", "unknown") if pr.get("user") else "unknown"
+            })
+    
+    return {
+        "repository": f"{owner}/{repo}",
+        "issue": {
+            "number": issue_number,
+            "title": issue_data.get("title", ""),
+            "url": issue_data.get("html_url", ""),
+            "labels": issue_labels,
+            "is_beginner_friendly": is_beginner,
+            "author": issue_data.get("user", {}).get("login", "unknown") if issue_data.get("user") else "unknown"
+        },
+        "ai_summary": ai_analysis,
+        "scoring": issue_scoring,
+        "related_prs": related_prs,
+        "guide": {
+            "estimated_time": "1-2 hours" if is_beginner else "2-4 hours",
+            "difficulty": "Easy" if is_beginner else "Medium",
+            "steps": [
+                {"step": 1, "title": "Fork the Repository", "description": f"Click Fork on {owner}/{repo}", "action": f"Visit https://github.com/{owner}/{repo} and click Fork"},
+                {"step": 2, "title": "Clone Your Fork", "description": "Download your fork to your machine", "command": f"git clone {clone_url}\ncd {repo}"},
+                {"step": 3, "title": "Install Dependencies", "description": f"Set up this {language or 'project'}", "commands": setup_commands},
+                {"step": 4, "title": "Create a Branch", "description": "Create a branch for your changes", "command": f"git checkout -b fix-issue-{issue_number}"},
+                {"step": 5, "title": "Make Changes", "description": "Implement the fix described in the issue", "files_to_edit": _suggest_files(language, issue_data.get("title", ""), issue_data.get("body", "") or "")},
+                {"step": 6, "title": "Run Tests", "description": "Verify your changes work", "commands": _get_test_commands(language, topics)},
+                {"step": 7, "title": "Commit and Push", "description": "Commit with a clear message", "command": f'git add .\ngit commit -m "Fix #{issue_number}: {issue_data.get("title", "")[:80]}"\ngit push origin fix-issue-{issue_number}'},
+                {"step": 8, "title": "Open a Pull Request", "description": f"Open a PR to {owner}/{repo}", "action": f"Visit https://github.com/{owner}/{repo}/compare/{default_branch}...YOUR_USERNAME:fix-issue-{issue_number}"}
+            ],
+            "pull_request_checklist": [
+                "Code follows project style guide",
+                "Tests pass locally",
+                "Changes focused on the issue",
+                "Clear commit messages",
+                "PR references the issue number"
+            ]
+        }
+    }
+
+
+def _get_setup_commands(language: str, topics: list) -> list:
+    lang = (language or "").lower()
+    topic_str = " ".join(topics).lower() if topics else ""
+    if lang in ("python",):
+        return ["python -m venv venv", "source venv/bin/activate", "pip install -r requirements.txt"]
+    elif lang in ("javascript", "typescript"):
+        return ["npm install"]
+    elif lang in ("go",):
+        return ["go mod download", "go build ./..."]
+    elif lang in ("rust",):
+        return ["cargo build"]
+    else:
+        return ["# Follow setup instructions in README.md"]
+
+
+def _get_test_commands(language: str, topics: list) -> list:
+    lang = (language or "").lower()
+    if lang in ("python",):
+        return ["pytest"]
+    elif lang in ("javascript", "typescript"):
+        return ["npm test"]
+    elif lang in ("go",):
+        return ["go test ./..."]
+    elif lang in ("rust",):
+        return ["cargo test"]
+    else:
+        return ["# Run tests as described in README"]
+
+
+def _suggest_files(language: str, title: str, body: str) -> list:
+    lang = (language or "").lower()
+    text = (title + " " + body).lower()
+    suggestions = []
+    if "documentation" in text or "readme" in text: suggestions.append("README.md")
+    if "bug" in text or "fix" in text: suggestions.append(f"Source files in {lang or 'src'}/ directory")
+    if "test" in text: suggestions.append("Test files")
+    if not suggestions:
+        suggestions = [f"Source code in the main {lang or 'project'} directory", "Check README for structure"]
+    return suggestions
 
 
 @router.get("/repositories/{owner}/{repo}/issues")
@@ -130,24 +294,18 @@ async def get_issues(owner: str, repo: str, labels: Optional[str] = Query(None),
     if labels: params["labels"] = labels
     data = await github_client.request(f"https://api.github.com/repos/{owner}/{repo}/issues", params)
     return {
-        "repository": f"{owner}/{repo}",
-        "page": page,
-        "per_page": per_page,
+        "repository": f"{owner}/{repo}", "page": page, "per_page": per_page,
         "last_checked": datetime.now(timezone.utc).isoformat(),
         "issues": [
             {
-                "id": i["id"],
-                "number": i["number"],
-                "title": i["title"],
+                "id": i["id"], "number": i["number"], "title": i["title"],
                 "labels": [l["name"] for l in i.get("labels", [])],
-                "comments": i["comments"],
-                "created_at": i["created_at"],
+                "comments": i["comments"], "created_at": i["created_at"],
                 "url": i["html_url"],
                 "author": {"login": i["user"]["login"], "avatar": i["user"]["avatar_url"]} if i.get("user") else None,
                 "is_beginner_friendly": any(l.lower() in ["good first issue", "beginner", "easy"] for l in [lbl["name"] for lbl in i.get("labels", [])])
             }
-            for i in (data or [])
-            if "pull_request" not in i
+            for i in (data or []) if "pull_request" not in i
         ]
     }
 
@@ -170,16 +328,7 @@ async def similar_repos(owner: str, repo: str, limit: int = Query(3, ge=1, le=10
             for r in data.get("items", []):
                 if r["full_name"] == current["full_name"]: continue
                 if len(similar) >= limit: break
-                similar.append({"id": r["id"], "full_name": r["full_name"], "description": (r.get("description") or "No description available.")[:120], "stars": r["stargazers_count"], "forks": r["forks_count"], "language": r.get("language"), "open_issues": r["open_issues_count"], "url": r["html_url"], "topics": r.get("topics", [])[:5]})
-    if len(similar) < limit and repo_language:
-        needed = limit - len(similar)
-        data = await github_client.request("https://api.github.com/search/repositories", {"q": f"language:{repo_language} good-first-issues:>0", "sort": "stars", "per_page": needed + 1})
-        if data:
-            for r in data.get("items", []):
-                if r["full_name"] == current["full_name"]: continue
-                if any(s["full_name"] == r["full_name"] for s in similar): continue
-                if len(similar) >= limit: break
-                similar.append({"id": r["id"], "full_name": r["full_name"], "description": (r.get("description") or "No description available.")[:120], "stars": r["stargazers_count"], "forks": r["forks_count"], "language": r.get("language"), "open_issues": r["open_issues_count"], "url": r["html_url"], "topics": r.get("topics", [])[:5]})
+                similar.append({"id": r["id"], "full_name": r["full_name"], "description": (r.get("description") or "No description available.")[:120], "stars": r["stargazers_count"], "forks": r["forks_count"], "language": r.get("language"), "open_issues": r["open_issues_count"], "url": r["html_url"]})
     if len(similar) < limit and repo_language:
         needed = limit - len(similar)
         data = await github_client.request("https://api.github.com/search/repositories", {"q": f"language:{repo_language}", "sort": "stars", "per_page": needed + 1})
@@ -188,7 +337,7 @@ async def similar_repos(owner: str, repo: str, limit: int = Query(3, ge=1, le=10
                 if r["full_name"] == current["full_name"]: continue
                 if any(s["full_name"] == r["full_name"] for s in similar): continue
                 if len(similar) >= limit: break
-                similar.append({"id": r["id"], "full_name": r["full_name"], "description": (r.get("description") or "No description available.")[:120], "stars": r["stargazers_count"], "forks": r["forks_count"], "language": r.get("language"), "open_issues": r["open_issues_count"], "url": r["html_url"], "topics": r.get("topics", [])[:5]})
+                similar.append({"id": r["id"], "full_name": r["full_name"], "description": (r.get("description") or "No description available.")[:120], "stars": r["stargazers_count"], "forks": r["forks_count"], "language": r.get("language"), "open_issues": r["open_issues_count"], "url": r["html_url"]})
     return {"repository": f"{owner}/{repo}", "similar": similar[:limit], "total": len(similar)}
 
 
@@ -210,12 +359,8 @@ async def get_user(username: str = Path(example="octocat")):
     if data is None:
         raise HTTPException(status_code=404, detail=f"User {username} not found")
     return {
-        "username": data["login"],
-        "name": data.get("name"),
-        "avatar": data.get("avatar_url"),
-        "followers": data["followers"],
-        "following": data.get("following", 0),
-        "public_repos": data.get("public_repos", 0),
-        "bio": data.get("bio"),
+        "username": data["login"], "name": data.get("name"), "avatar": data.get("avatar_url"),
+        "followers": data["followers"], "following": data.get("following", 0),
+        "public_repos": data.get("public_repos", 0), "bio": data.get("bio"),
         "last_checked": datetime.now(timezone.utc).isoformat()
     }
